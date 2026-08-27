@@ -1,4 +1,3 @@
-
 # 📋 MyNetMate รายการ Features 
 
 > **โปรเจกต์:** MyNetMate — Application for Network Management and Configuration Automation  
@@ -15,6 +14,7 @@
 | **กฎทอง **          | "มีคำตอบถูกต้องเพียง 1 คำตอบหรือไม่?" → **ใช่** = ใช้ Template/Rule → **ไม่** = ใช้ AI |
 | **อัตราส่วน 80/20** | 80% Template-driven + 20% AI-Powered                                                   |
 ## ขอบเขตของ Vendor 
+
 * CISCO
 * Huawei
 * Microtik
@@ -177,17 +177,14 @@
     3. **Enrichment & Storage (เพิ่มคุณค่าและจัดเก็บ):** เอาข้อมูลที่สกัดได้ไปตรวจสอบกับ Database ว่าซ้ำกับที่มีอยู่ไหม? อัปเดตข้อมูลใหม่ให้สมบูรณ์ขึ้น? แล้วบันทึกลง Database ให้เรียบร้อย
 - **ทำไปทำไม:** เพื่อให้อาจารย์เห็นว่า โค้ดหลังบ้านของเราเขียนอย่างมีโครงสร้าง (Modular) แบบโปรแกรมเมอร์มืออาชีพ ไม่ใช่เขียนสะเปะสะปะรวมกันเป็นก้อนเดียวครับ
 ### 3.3 Data Device Information
-* รายละเอียดข้อมูลที่ต้องเก็บ [[GitProject/docs/Data Information]]
-
-
-
+* รายละเอียดข้อมูลที่ต้องเก็บ [[02_feature/02_Device Inventory Management(Tee)/Data Information]]
 ##  4.Network Topology Visualization (Non-AI)
 
 | Feature                        | รายละเอียด                                    |
 | ------------------------------ | --------------------------------------------- |
 | **Interactive Canvas**         | Drag-and-drop device nodes บน Canvas          |
 | **Device Icons**               | แสดง Icon ตามประเภท (Router/Switch/AP)        |
-| **Manual Link Connection**     | ลากเส้นเชื่อมอุปกรณ์ พร้อม Port Labels        |
+| **Manual Link Connection**     | แนวคิดเดิมสำหรับลากเส้นเชื่อมอุปกรณ์; ย้ายเป็น Future Enhancement และไม่อยู่ใน NTV MVP |
 | **Right-Click Context Menu**   | คลิกขวาเพื่อ Edit/Delete/View Details         |
 | **PNG Export**(ไม่เอา)         | ส่งออก Topology เป็นรูปภาพ                    |
 | **Auto-Layout from Discovery** | จัดวาง Topology จากข้อมูล Discovery อัตโนมัติ |
@@ -202,7 +199,9 @@
 - **ทำอะไร:** ระบบจะดูว่าอุปกรณ์ตัวนี้คืออะไร (รู้มาจากตอน Discovery หรือตอนกรอกมือ) แล้วเปลี่ยนรูปร่างให้ตรงกัน เช่น Router ก็เป็นรูปทรงกระบอก, Switch เป็นกล่องสี่เหลี่ยมมีลูกศร
 - **ทำไปทำไม:** เพื่อให้มองปุ๊บรู้ปั๊บ โดยไม่ต้องไปนั่งอ่านชื่อทีละตัว
 - **จุดที่น่ากังวล:** เป็นเรื่องจิปาถะทั่วไปครับ แค่เตรียมไฟล์ภาพ Icon สวยๆ (เช่น สไตล์ Cisco Icon) เอาไว้ในระบบให้ครบก็พอ
-### 3️⃣ Manual Link Connection (ลากเส้นเชื่อมต่อด้วยมือ)
+### 3️⃣ Manual Link Connection (ลากเส้นเชื่อมต่อด้วยมือ) — Future Enhancement
+
+> หัวข้อนี้เป็นแนวคิดเดิม ไม่ใช่ NTV MVP ปัจจุบัน โดย MVP แสดง Link จาก LLDP/CDP Observation และไม่ให้ผู้ใช้สร้างหรือแก้ Link ด้วยมือ
 
 - **ทำอะไร:** ผู้ใช้สามารถคลิกที่อุปกรณ์ตัวที่ 1 ค้างไว้ แล้วลากเส้นไปแปะที่อุปกรณ์ตัวที่ 2 ได้เลย ระบบจะขึ้นหน้าต่างเล็กๆ มาถามว่า "เส้นนี้เสียบจาก Port ไหน ไป Port ไหน?"
 - **ทำไปทำไม:** ในกรณีที่ระบบค้นหาอัตโนมัติ (Discovery) หาเส้นเชื่อมต่อไม่เจอ (อาจจะเพราะอุปกรณ์ปิด CDP/LLDP ไว้ หรือเป็นอุปกรณ์เก่า) มนุษย์ก็สามารถลากเส้นบอกระบบเองได้ว่า "สองตัวนี้มันต่อกันอยู่นะ" แผนผังจะได้สมบูรณ์
@@ -281,7 +280,6 @@
 |                           | DNS(Optional)        | ✅      | ✅      |                                                                 |          |
 | *                         | **DHCP Relay**       | ❌      | ✅      |                                                                 |          |
 | Switch                    | **`ip routing`**     | ✅      | ❌      | เปิดให้ L3 Switch ทำ Routing ได้ ถ้าไม่เปิด = Routing ไม่ทำงาน! |          |
-
 
 ### 5.2 AI-Powered Configuration
 ฝั่งนี้เปรียบเสมือนมี **"วิศวกรซีเนียร์"** มานั่งอยู่ข้างๆ คอยช่วยคิด ช่วยพิมพ์ ช่วยตรวจงานให้เราครับ
@@ -854,4 +852,4 @@
 | ** Gemini API Quota**                  | ถ้าใช้ Free Tier มี Rate Limit (จำกัดจำนวน Request ต่อนาที) ตอน Demo อาจเจอ Error ถ้ากด Test บ่อยเกินไป                                                                           |
 | ** ความพร้อมของอาจารย์ที่ปรึกษา**      | การนัด Feedback แต่ละรอบอาจใช้เวลาหลายวัน ทำให้ตัดสินใจบางอย่างล่าช้า                                                                                                             |
 
-[[02_feature/Archive/Claude MyNetMate Weight Feature List]]
+[[mynetmate/docs/Feature Design/Archive/Claude MyNetMate Weight Feature List]]
