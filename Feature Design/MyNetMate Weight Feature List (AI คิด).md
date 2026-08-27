@@ -1,6 +1,8 @@
 # 📊 MyNetMate: สรุปฟีเจอร์และลำดับการพัฒนา 
 อ้างอิงจาก 02_feature/Claude MyNetMate Weight Feature List, 02_feature/MyNetMate รายการ Features
 
+> ⚠️ **Pending Vendor Scope Review (อัปเดต 2026-08-11 — ยังไม่ใช่การเปลี่ยน Priority Matrix ฉบับยืนยัน):** อาจารย์มีอุปกรณ์จริงให้ทดสอบหลังกลางภาค ได้แก่ Huawei Router 1 ตัว, MikroTik Switch 1 ตัว และ Cisco Switch 1 ตัว ดังนั้น Huawei และ MikroTik ต้องถือเป็น **Candidate Test Vendors** ไม่ใช่ Vendor ที่ถูกตัดออก อย่างไรก็ตาม การรองรับต้องจำกัดตามรุ่น ระบบปฏิบัติการ ชุดคำสั่ง และผลทดสอบจริงใน Isolated Lab ส่วน **Complex Multi-vendor Policy ยังคงเป็น CUT** จนกว่าทีมและอาจารย์จะยืนยัน Scope ใหม่
+
 ## 1. บริบทและข้อจำกัด (ทำไมเราถึงทำทุกอย่างไม่ได้?)
 
 ก่อนที่จะจัดลำดับฟีเจอร์ เราต้องยอมรับข้อจำกัดของโปรเจกต์นี้ก่อน:
@@ -255,18 +257,22 @@
 
 **สรุปคือ:** Dashboard ไม่โดนตัดทิ้งเลยครับ ทีม Frontend สามารถออกแบบ UI และขึ้นโครง (Mockup) ตามที่วางแผนไว้ในหน้า "Mockup จากภาพพี่ออม" ได้แบบ 100% เต็มเลยครับ!
 
-### 4.7 Manual Device Management (อ้างอิงหมวด 3)
+### 4.7 Manual Device Enrollment & Management (อ้างอิงหมวด 3)
 
-สำหรับหมวด **`3.1 Manual Device Management (Non-AI)`** ถือว่าเป็น **พระเอกคนแรกของ P1-CORE** เลยครับ เพราะถ้าไม่มีหมวดนี้ เราก็จะไม่มีอุปกรณ์ในระบบให้ไปสั่ง Config ต่อได้
+สำหรับหมวด **`3.1 Manual Device Enrollment & Management (Non-AI)`** ถือว่าเป็นส่วนตั้งต้นของ P1-CORE เพราะระบบต้องมีวิธีรับอุปกรณ์เป้าหมายที่ผู้ใช้ทราบ IP อยู่แล้ว โดยไม่ต้องรอ Network Discovery
 
 เมื่อผ่านการประเมิน (Weight) แล้ว ฟีเจอร์ย่อยใน 3.1 จะถูกจัดสรรดังนี้ครับ:
 
 #### 🏆 🟢 **กลุ่มที่รอด 100% และถูกยกระดับเป็น "P1-CORE" (ต้องโชว์อาจารย์)**
 
-1. **Manual Device Entry & Device CRUD:** (เพิ่ม/ลบ/แก้ไขข้อมูลอุปกรณ์)
-    - **รอดแน่นอน:** นี่คือ Step ที่ 2 ของ Demo Flow `[Login] → [Add Device] → [6-Tab Config Builder]` กรรมการจะต้องเห็นคุณพิมพ์เพิ่มอุปกรณ์ (เช่น กรอก IP, เลือกยี่ห้อ Cisco, ใส่รหัสผ่าน) ลงในระบบด้วยมือ
-2. **Device Status Monitoring (Ping Status):**
-    - **รอดแน่นอน:** พอเพิ่มอุปกรณ์เสร็จ ระบบต้องส่ง Ping ไปเช็คและขึ้นไฟ 🟢 Online ทันที เพื่อโชว์ให้กรรมการเห็นว่าระบบเราเชื่อมต่อกับอุปกรณ์จริงได้แล้ว (ทำร่วมกับ Dashboard)
+1. **Manual Device Enrollment & Managed Device CRUD:**
+    - ผู้ใช้ระบุ Management IP, Protocol/Port, เลือก Device Credential Profile และกรอกข้อมูลประกอบ เช่น Site, Group หรือ Description
+    - ระบบต้องเชื่อมต่อแบบ Read-only และเก็บข้อมูลระบุตัวตนขั้นต่ำ เช่น Hostname, Vendor, Model และ OS Version ก่อนสร้างเป็น Managed Device ส่วน Interface และ LLDP/CDP Neighbor Collection ขยายเพิ่มใน P2 เมื่อทำ Discovery/NTV
+    - ข้อมูลที่มาจากอุปกรณ์ต้องปรับปรุงผ่าน Collection ไม่ให้ผู้ใช้แก้เป็นข้อมูลยืนยันโดยตรง
+    - Device CRUD หมายถึงการจัดการ Record และข้อมูลประกอบใน MyNetMate การลบ Record ไม่ได้ลบหรือเปลี่ยน Configuration ของอุปกรณ์จริง
+2. **Device Reachability & Collection Status:**
+    - Ping ใช้บอก Reachability เบื้องต้นเท่านั้น การตอบ Ping ไม่ได้ยืนยันว่าเป็น Router/Switch หรือแปลว่า Collection สำเร็จ
+    - ระบบถือว่าอุปกรณ์พร้อมใช้งานเป็น Managed Device เมื่อ Authentication, Read-only Collection และการ Parse ข้อมูลสำคัญสำเร็จตามเกณฑ์
 
 #### 🏗️ 🟢 **กลุ่มที่รอด แต่อยู่เบื้องหลัง "P1-INFRA"**
 
@@ -279,7 +285,7 @@
     - ในการประเมิน Weight ล่าสุด โฟกัสของระบบเราไปอยู่ที่ **"การสร้าง Config ใหม่ผ่านหน้า 6-Tab"** เป็นหลัก ดังนั้นการอัปโหลดไฟล์ Config ก้อนเดิมเข้าไปเก็บไว้ จึงมีความสำคัญลดลง
     - **คำแนะนำทางวิศวกรรม:** ถ้าทำทันใน P1 ก็ทำได้เลยเพราะแค่สร้างปุ่ม Upload Text File ลง Database แต่ถ้าเวลาจำกัด **ฟีเจอร์นี้สามารถปัดไป P2 ได้อย่างปลอดภัย** เพราะมันไม่กระทบกับ End-to-End Flow หลักของการ Demo ครับ
 
-**สรุปสั้นๆ:** หมวด 3.1 (Manual) คือ "ทางรอด" ของโปรเจกต์นี้ครับ เพราะเราตัดหมวด 3.2 (Network Discovery แบบสแกนอัตโนมัติ) ไปเป็น P2 หมดแล้ว ถ้า 3.1 ไม่เกิด โปรเจกต์เราจะเดินหน้าต่อไม่ได้เลยครับ!
+**สรุปสั้น ๆ:** หมวด 3.1 คือเส้นทางนำอุปกรณ์เข้าสู่ระบบโดยผู้ใช้ระบุเป้าหมายเอง ส่วนหมวด 3.2 ให้ระบบค้นหาเป้าหมายอัตโนมัติ ทั้งสองเส้นทางต้องใช้ Collection/Parser และเกณฑ์การเป็น Managed Device เดียวกัน
 
 ### 4.8 Network Discovery (อ้างอิงหมวด 3)
 
@@ -297,7 +303,7 @@
 1. **🚨 ความเสี่ยงเรื่อง Network มหาลัย (The Blocker):**
    - การทำ IP Range Ping Sweep มีพฤติกรรมคล้ายกับพฤติกรรมของ Hacker (Network Scanning) ซึ่งระบบ Firewall ของมหาวิทยาลัยจะ **Block** และอาจแบน IP เครื่องของคุณทันที ถ้าทำใน P1 แล้วเกิดปัญหาตอน Demo งานจะเข้าทันทีครับ (ตามที่เขียนไว้ใน Top 5 Risks ข้อ 3)
 2. **❌ ไม่ใช่ Critical Path ของการ Demo:**
-   - จุดขายหลักใน P1 ของเราคือ **"การสร้างและตรวจสอบ Config (Template + CIS)"** ดังนั้นการที่เรายอมให้ User กรอกข้อมูลอุปกรณ์ด้วยมือ (Manual - หมวด 3.1) ก็เพียงพอแล้วที่จะทำให้ Flow การทำงานเดินหน้าต่อไปได้ การสแกนอัตโนมัติเป็นเพียง "ความสะดวกสบาย (Convenience)" ไม่ใช่ "แก่น (Core)"
+   - จุดขายหลักใน P1 คือ **"การสร้างและตรวจสอบ Config (Template + CIS)"** ดังนั้น Manual Device Enrollment ซึ่งให้ผู้ใช้ระบุ Management IP และ Credential Profile แล้วให้ระบบเก็บข้อมูลจากอุปกรณ์เป้าหมาย จึงเพียงพอสำหรับเริ่ม Flow โดยไม่ต้องทำการค้นหา IP อัตโนมัติใน P1
 3. **⛓️ มันคือคอขวดที่ไปผูกกับ Feature 4 (Topology):**
    - ฟีเจอร์ Topology (การวาดแผนผัง) ต้องอาศัยข้อมูลจาก LLDP/CDP ในหมวด 3.2 นี้แหละครับ เมื่อเราดึง 3.2 ไป P2 หมวด 4 (Topology) ก็เลยต้องตามไป P2 ด้วยโดยปริยาย (ทำพร้อมกันในเทอม 2)
 
@@ -315,7 +321,7 @@
 
 อธิบายทางวิศวกรรมคือ:
 1. **มันคือผลพลอยได้จาก Discovery:** ฟีเจอร์ที่ว้าวที่สุดของ Topology คือ `Auto-Layout from Discovery` (ให้ระบบลากเส้นโยงให้อัตโนมัติ) แต่เนื่องจากตัว Network Discovery (หมวด 3.2) มันถูกเลื่อนไป P2 แล้ว (เพราะเรื่องติด Block มหาลัย) ทำให้หมวด Topology ขาดข้อมูลตั้งต้น (LLDP/CDP) ที่จะเอามาวาดเส้นครับ
-2. **ทำไปตอนนี้ก็ต้องมานั่งลากเส้นเอง:** ถ้าฝืนทำ Topology ใน P1 (เทอม 1) สิ่งที่คุณจะได้คือ `Interactive Canvas` เปล่าๆ ที่คุณต้องแอดอุปกรณ์ทีละตัว แล้วมานั่งคลิกลากเส้นโยงหากันเอง (`Manual Link Connection`) ซึ่งมันใช้เวลาเยอะ (ฝั่ง Frontend อย่าง React Flow ทำยาก) แต่ได้ผลลัพธ์ที่กรรมการเฉยๆ (เพราะ Visio ก็ทำได้)
+2. **ถ้าไม่มี Observation จะเหลือเพียง Canvas ว่าง:** การให้ผู้ใช้สร้าง Device/Port หรือวาด Link อย่างอิสระจะทำให้ NTV กลายเป็นโปรแกรมวาด Diagram และข้อมูลอาจไม่ตรงกับเครือข่ายจริง จึงไม่ทำ Freehand Link หรือ Manual Override ใน NTV MVP หาก LLDP/CDP ใช้ไม่ได้ ระบบแสดง Collection/Parser Status หรือ Unresolved/Empty State และให้ผู้ใช้ Re-collect ส่วน Evidence-based Manual Override เก็บเป็น Future Enhancement หลังประเมินผลทดสอบอุปกรณ์จริง
 3. **โฟกัสผิดจุด:** หัวใจของ P1 คือ **"การสร้าง Config"** ครับ การเอาเวลา 2-3 สัปดาห์ไปนั่งเขียนโค้ด React วาดรูป อาจจะทำให้เวลาทำระบบ Config Builder (หน้าฟอร์ม 6-Tab) ไม่พอครับ
 
 **สรุปคือ:** 
@@ -489,7 +495,7 @@
 | ------- | --------------------------------------------------------- | ------------------ | ---------- |
 | 1       | **Auth & RBAC:** Login, Server-side Session, แบ่ง 3 Roles | Infra              | 🟢 Low     |
 | 2       | **Dashboard:** Metrics พื้นฐาน, Activity Feed             | Infra              | 🟢 Low     |
-| 3       | **Device Inventory:** เพิ่มอุปกรณ์แบบ Manual, Ping Status | Core               | 🟢 Low     |
+| 3       | **Device Inventory:** Manual Enrollment, Reachability และ Collection Status | Core               | 🟢 Low     |
 | 5       | **Config Gen (Template):** 6-Tab Form, Jinja2 Render      | Core               | 🟡 Medium  |
 | 6       | **PII Masking:** ซ่อน IP/Password ก่อนส่งออก API          | Infra              | 🟢 Low     |
 | 7       | **Deployment (Plan):** UI Flow โชว์การจำลองก่อน Push จริง | Core               | 🟢 Low     |
@@ -528,9 +534,9 @@
 * **System API Status** 🏗️
 
 ### 3. Device Inventory & Discovery Management
-* **Manual Device Management**
-	* **Manual Device Entry & Device CRUD** 🏆
-	* **Device Status Monitoring** 🏆
+* **Manual Device Enrollment & Management**
+	* **Manual Enrollment & Managed Device CRUD** 🏆
+	* **Reachability & Collection Status** 🏆
 	* **Device Grouping** 🏗️
 	* **Running-Config Upload** 🚀
 * **Network Discovery**
@@ -543,7 +549,7 @@
 ### 4. Network Topology Visualization
 * **Interactive Canvas** 🚀
 * **Auto-Layout from Discovery** 🚀
-* **Manual Link Connection** 🚀
+* **Evidence-based Manual Override** — Future Enhancement (ไม่ใช่ NTV MVP)
 * **Right-Click Context Menu** 🚀
 * **Device Icons** 🚀
 
