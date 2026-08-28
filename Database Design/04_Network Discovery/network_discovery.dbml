@@ -1,5 +1,5 @@
 // =============================================================================
-// DBML Schema: 04_Network Discovery
+// DBML Schema: 04_Network Discovery (3NF Normalized)
 // Scope: Strictly for Network Discovery (Oxian Engine Output)
 // Usage: Copy-paste to https://dbdiagram.io to visualize instantly!
 // =============================================================================
@@ -24,6 +24,16 @@ Enum link_protocol_enum {
   manual
 }
 
+Enum scan_status_enum {
+  pending
+  running
+  completed
+  failed
+}
+
+// -----------------------------------------------------------------------------
+// Core Entity: devices (3NF: Unique Candidate Key = ip)
+// -----------------------------------------------------------------------------
 Table devices {
   id uuid [pk, default: `uuid_generate_v4()`]
   ip inet [not null, unique]
@@ -36,8 +46,17 @@ Table devices {
   last_discovered_at timestamptz [default: `now()`]
   created_at timestamptz [default: `now()`]
   updated_at timestamptz [default: `now()`]
+
+  indexes {
+    ip [name: 'idx_devices_ip']
+    hostname [name: 'idx_devices_hostname']
+    vendor [name: 'idx_devices_vendor']
+  }
 }
 
+// -----------------------------------------------------------------------------
+// Weak Entity: device_interfaces (3NF: Composite AK = device_id + if_index)
+// -----------------------------------------------------------------------------
 Table device_interfaces {
   id uuid [pk, default: `uuid_generate_v4()`]
   device_id uuid [not null, ref: > devices.id]
@@ -49,29 +68,47 @@ Table device_interfaces {
   updated_at timestamptz [default: `now()`]
 
   indexes {
-    (device_id, if_index) [unique]
+    (device_id, if_index) [unique, name: 'uq_device_if_index']
+    device_id [name: 'idx_interfaces_device_id']
+    mac_address [name: 'idx_interfaces_mac']
   }
 }
 
+// -----------------------------------------------------------------------------
+// Relation: topology_links (3NF: Eliminates transitive device redundancy)
+// -----------------------------------------------------------------------------
 Table topology_links {
   id uuid [pk, default: `uuid_generate_v4()`]
-  source_device_id uuid [not null, ref: > devices.id]
-  source_interface_id uuid [ref: > device_interfaces.id]
-  target_device_id uuid [ref: > devices.id]
+  source_interface_id uuid [not null, ref: > device_interfaces.id]
   target_interface_id uuid [ref: > device_interfaces.id]
+  target_device_id uuid [ref: > devices.id]
   target_hostname_hint varchar(255)
   target_port_hint varchar(255)
   protocol link_protocol_enum [default: 'lldp']
   discovered_at timestamptz [default: `now()`]
+
+  indexes {
+    source_interface_id [name: 'idx_links_source_interface']
+    target_interface_id [name: 'idx_links_target_interface']
+    target_device_id [name: 'idx_links_target_device']
+  }
 }
 
+// -----------------------------------------------------------------------------
+// Audit Entity: discovery_scans (3NF: Execution Metrics)
+// -----------------------------------------------------------------------------
 Table discovery_scans {
   id uuid [pk, default: `uuid_generate_v4()`]
   seed_ip inet [not null]
-  status varchar(20) [default: 'completed']
+  status scan_status_enum [default: 'completed']
   devices_count integer [default: 0]
   links_count integer [default: 0]
   duration_ms integer
   error_message text
   scanned_at timestamptz [default: `now()`]
+
+  indexes {
+    seed_ip [name: 'idx_discovery_scans_seed_ip']
+    scanned_at [name: 'idx_discovery_scans_scanned_at']
+  }
 }
