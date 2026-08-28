@@ -1,9 +1,16 @@
 # 📡 Database Schema: 04_Network Discovery
 
 > **Path**: `Database Design/04_Network Discovery/`  
-> **SQL DDL**: [`network_discovery.sql`](./network_discovery.sql)  
 > **DBML**: [`network_discovery.dbml`](./network_discovery.dbml)  
-> **Feature Link**: [`Feature Design/04_Network Discrovery(Tee)`](../../Feature%20Design/04_Network%20Discrovery(Tee)/)
+> **Feature Link**: [`Feature Design/04_Network Discrovery(Tee)`](../../Feature%20Design/04_Network%20Discrovery(Tee)/)  
+>
+> 📁 **SQL Schemas (`sql/`)**:
+> - [`00_enums.sql`](./sql/00_enums.sql) (Enums & Extensions)
+> - [`01_devices.sql`](./sql/01_devices.sql) (ตาราง devices)
+> - [`02_device_interfaces.sql`](./sql/02_device_interfaces.sql) (ตาราง device_interfaces)
+> - [`03_topology_links.sql`](./sql/03_topology_links.sql) (ตาราง topology_links)
+> - [`04_discovery_scans.sql`](./sql/04_discovery_scans.sql) (ตาราง discovery_scans)
+> - [`99_seed_data.sql`](./sql/99_seed_data.sql) (ข้อมูล Mock Test Data)
 
 ---
 

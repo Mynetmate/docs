@@ -14,9 +14,15 @@ Database Design/
 │   └── README.md
 ├── 03_Network Topology Visualization/
 ├── 04_Network Discovery/
-│   ├── network_discovery.sql
+│   ├── README.md
 │   ├── network_discovery.dbml
-│   └── README.md
+│   └── sql/
+│       ├── 00_enums.sql
+│       ├── 01_devices.sql
+│       ├── 02_device_interfaces.sql
+│       ├── 03_topology_links.sql
+│       ├── 04_discovery_scans.sql
+│       └── 99_seed_data.sql
 ├── 05_Configuration Management/
 ├── 07_AI Component/
 ├── 09_Security & Validation/
