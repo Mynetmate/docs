@@ -1,0 +1,77 @@
+// =============================================================================
+// DBML Schema: 04_Network Discovery
+// Scope: Strictly for Network Discovery (Oxian Engine Output)
+// Usage: Copy-paste to https://dbdiagram.io to visualize instantly!
+// =============================================================================
+
+Enum device_status_enum {
+  online
+  offline
+  unreachable
+}
+
+Enum interface_status_enum {
+  Up
+  Down
+  Testing
+  Unknown
+}
+
+Enum link_protocol_enum {
+  lldp
+  cdp
+  default_route
+  manual
+}
+
+Table devices {
+  id uuid [pk, default: `uuid_generate_v4()`]
+  ip inet [not null, unique]
+  hostname varchar(255)
+  description text
+  vendor varchar(50) [default: 'Unknown']
+  chassis_id varchar(100)
+  is_managed boolean [default: true]
+  status device_status_enum [default: 'online']
+  last_discovered_at timestamptz [default: `now()`]
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`]
+}
+
+Table device_interfaces {
+  id uuid [pk, default: `uuid_generate_v4()`]
+  device_id uuid [not null, ref: > devices.id]
+  if_index integer [not null]
+  name varchar(255) [not null]
+  mac_address macaddr
+  admin_status interface_status_enum [default: 'Up']
+  oper_status interface_status_enum [default: 'Up']
+  updated_at timestamptz [default: `now()`]
+
+  indexes {
+    (device_id, if_index) [unique]
+  }
+}
+
+Table topology_links {
+  id uuid [pk, default: `uuid_generate_v4()`]
+  source_device_id uuid [not null, ref: > devices.id]
+  source_interface_id uuid [ref: > device_interfaces.id]
+  target_device_id uuid [ref: > devices.id]
+  target_interface_id uuid [ref: > device_interfaces.id]
+  target_hostname_hint varchar(255)
+  target_port_hint varchar(255)
+  protocol link_protocol_enum [default: 'lldp']
+  discovered_at timestamptz [default: `now()`]
+}
+
+Table discovery_scans {
+  id uuid [pk, default: `uuid_generate_v4()`]
+  seed_ip inet [not null]
+  status varchar(20) [default: 'completed']
+  devices_count integer [default: 0]
+  links_count integer [default: 0]
+  duration_ms integer
+  error_message text
+  scanned_at timestamptz [default: `now()`]
+}
