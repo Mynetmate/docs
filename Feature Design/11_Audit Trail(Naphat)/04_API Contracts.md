@@ -14,8 +14,7 @@ async def record_audit_event(
     user_id: UUID | None = None,
     resource_id: UUID | None = None,
     safe_error_category: str | None = None,
-    description: str | None = None,
-    ip_address: str | None = None
+    description: str | None = None
 ) -> None:
     pass
 ```
@@ -40,7 +39,6 @@ async def record_audit_event(
 - `result` — `success` หรือ `failure`
 - `safe_error_category` (Nullable) — ตามกฎ Invariant
 - `description` (Nullable) — ผ่านการ Redaction แล้วเท่านั้น
-- `ip_address` (Nullable)
 - `occurred_at` — Map มาจากคอลัมน์ `audit_logs.created_at`
 
 ### 2.2 Cursor Pagination Rule
@@ -63,7 +61,6 @@ async def record_audit_event(
       "result": "success",
       "safe_error_category": null,
       "description": "Added new switch BKK-SW1",
-      "ip_address": "10.0.0.5",
       "occurred_at": "2026-08-26T10:00:00+07:00"
     }
   ],
@@ -77,10 +74,10 @@ async def record_audit_event(
 - **Rule 2:** ถ้า `result = failure` แล้วค่า `safe_error_category` ต้องผ่าน Allowlist และต้องตรงกับ **Global Action Registry** (ไม่อนุญาตให้ Caller ส่งข้อความ Error อาการแปลกๆ หรือ Arbitrary detail ลงมาเอง)
 - **Rule 3:** Global Action Registry จะเป็น Source of Truth ที่ตัดสินว่า Action ไหนต้องมี Category ใด หรืออนุญาตให้เป็น Null ได้หรือไม่
 
-## 4. IP Exposure and Description Policy
+## 4. Data Privacy and Description Policy
 เพื่อให้เป็นไปตามกฎ Data Privacy มีข้อบังคับดังนี้:
-1. **การเปิดเผยฟิลด์:** `ip_address` และ `description` ได้รับอนุญาตให้ส่งออกผ่าน `GET /api/audit-logs` (Full Audit API) เท่านั้น ซึ่งต้องใช้สิทธิ์ `audit.read` (Admin) เพื่อประโยชน์ด้าน Security Audit
-2. **ห้าม D&M เปิดเผย:** API เส้น Recent Activity ของ Dashboard (`GET /api/dashboard/recent-activity`) **ห้าม**ส่งสองฟิลด์นี้ออกไปเด็ดขาด ไม่ว่าคนเรียก API จะเป็น Admin ก็ตาม
+1. **การเปิดเผยฟิลด์:** ฟิลด์ `description` ได้รับอนุญาตให้ส่งออกผ่าน `GET /api/audit-logs` (Full Audit API) เท่านั้น ซึ่งต้องใช้สิทธิ์ `audit.read` (Admin) เพื่อประโยชน์ด้าน Security Audit
+2. **ห้าม D&M เปิดเผย IP/Description:** API เส้น Recent Activity ของ Dashboard (`GET /api/dashboard/recent-activity`) **ห้าม**ส่ง Client IP หรือ `description` ออกไปเด็ดขาด ไม่ว่าคนเรียก API จะเป็น Admin ก็ตาม (เพื่อป้องกันกรณีมี IP หลุดมาในอนาคต)
 3. **Redaction at Source:** ข้อความใน `description` ต้องผ่านกระบวนการเซ็นเซอร์ (Redaction) **ก่อน**จะส่งเข้าฟังก์ชัน `record_audit_event()` และก่อนบันทึกลง Database (ห้ามใช้ API Response เป็นตัวกรองข้อมูลความลับย้อนหลัง)
 4. **Strict Ban:** หลัง Auth เปลี่ยนเป็น Opaque Session ห้ามเก็บหรือส่งออกรหัสผ่าน (Plaintext/Hash), Session Token, Cookie Header, Session Token Hash, Credential Secret, Raw Failed-login Identifier (เช่น พิมพ์ username ผิด) หรือ PII ที่ไม่จำเป็นลงใน `audit_logs` เด็ดขาด
 

@@ -211,10 +211,11 @@
 | `result` | VARCHAR(20) | NOT NULL, CHECK (result IN ('success', 'failure')) | `success` | สถานะของเหตุการณ์ |
 | `safe_error_category` | VARCHAR(100) | NULLABLE | `authentication_error` | หมวดหมู่ Error ที่ปลอดภัย |
 | `description` | TEXT | NULLABLE | `"Added device BKK-SW1"` | รายละเอียดเพิ่มเติม |
-| `ip_address` | VARCHAR(45) | NULLABLE | `10.0.0.5` | IP ของ Client |
 | `created_at` | TIMESTAMP WITH TIME ZONE | NOT NULL, DEFAULT NOW() | - | |
 
 **ตัวอย่าง action values:** `device.create`, `device.update`, `device.delete`, `config.generate`, `config.deploy`, `scan.run`, `scan.override`, `user.login_success`, `user.login_failed`, `user.logout`, `settings.update`
+
+*(หมายเหตุ: ในระยะ P1 จะไม่มีการเก็บ Client IP ในตาราง `audit_logs` ถาวร เพื่อลดการเก็บ PII ที่ไม่จำเป็น)*
 
 ---
 

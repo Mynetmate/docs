@@ -3,7 +3,7 @@
 เอกสารนี้กำหนดการเป็นเจ้าของข้อมูล (Data Ownership) และแค็ตตาล็อกเหตุการณ์มาตรฐาน (Canonical Events) ตลอดจนการตรวจสอบก่อนบันทึกข้อมูลเข้าฐานข้อมูล
 
 ## 1. Data Ownership
-- **Schema Owner:** โครงสร้างตาราง `audit_logs` ต้องอ้างอิงตาม **Central Schema** ในเอกสาร `02_feature/02_Device Inventory Management/Data Information.md` อย่างสมบูรณ์ ห้ามสร้าง Schema หรือ Table สำหรับ Audit แข่งขัน
+- **Schema Owner:** โครงสร้างตาราง `audit_logs` ต้องอ้างอิงตาม **Central Schema** ในเอกสาร `02_feature/Data Information 27-06-69.md` อย่างสมบูรณ์ ห้ามสร้าง Schema หรือ Table สำหรับ Audit แข่งขัน
 - **Write Owner:** Feature Audit Trail เป็นเจ้าของฟังก์ชันภายใน (internal writer) ชื่อ `record_audit_event()`
 - **Read Owner:** Feature Audit Trail เป็นเจ้าของ Full Audit API (`GET /api/audit-logs`) ในขณะที่ Feature D&M ทำหน้าที่เป็นเพียง Read-only Consumer สำหรับ API เส้น Recent Activity
 

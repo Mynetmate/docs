@@ -16,7 +16,7 @@
 - **สถานการณ์:** Admin เรียกใช้ `GET /api/audit-logs`
 - **สิ่งที่คาดหวัง:** 
   - ได้รับ HTTP 200 OK
-  - ข้อมูลที่ตอบกลับมีฟิลด์ครบถ้วน ได้แก่ `ip_address`, `safe_error_category`, `description`
+  - ข้อมูลที่ตอบกลับมีฟิลด์ครบถ้วน ได้แก่ `safe_error_category`, `description` (ไม่มี `ip_address` ตามข้อตกลง P1)
   - สามารถใช้ Filter เช่น ค้นหาเฉพาะ `action=user.login_failed` ได้อย่างถูกต้อง
 
 ## Test Case 4: Operator and Viewer Denied Access
@@ -51,3 +51,11 @@
     - `result = failure`
     - `safe_error_category = authorization_error`
     - `actor_user_id` ตรงกับ ID ของ Viewer คนนั้น
+
+## Test Case 9: No IP Address in Audit Trail
+- **สถานการณ์:** จำลองส่ง Request ด้วย Client IP `198.51.100.42` แล้วตรวจสอบ Database Schema และ API
+- **สิ่งที่คาดหวัง:**
+  - ตาราง `audit_logs` ไม่มีคอลัมน์ `ip_address`
+  - เมื่อ Query ดูข้อมูลดิบ (Raw Row) ในตาราง `audit_logs` โดยตรง ค่า `198.51.100.42` ต้องไม่ถูกฝังอยู่ในคอลัมน์ `description` หรือคอลัมน์อื่นๆ เพื่อรับรองกฎ Redaction at Source
+  - `GET /api/audit-logs` ไม่มีคีย์ `ip_address` ในข้อมูลที่ตอบกลับ และค่า `198.51.100.42` ต้องไม่ปรากฏในข้อความ Response (รวมถึงห้ามแฝงใน `description`)
+  - `GET /api/dashboard/recent-activity` ไม่มีคีย์ `ip_address` และไม่มีค่า `198.51.100.42` หลุดรอดออกไปเด็ดขาด
