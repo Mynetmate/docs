@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyNetMate · Network Discovery Dev Environment Architecture</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper: #f5f5f5;
+      --color-paper-2: #ececec;
+      --color-ink: #2d3142;
+      --color-muted: #4f5d75;
+      --color-soft: #7a8399;
+      --color-rule: rgba(45,49,66,0.12);
+      --color-accent: #eb6c36;
+      --color-accent-tint: rgba(235,108,54,0.08);
+      --color-link: #2e5aa8;
+      --font-sans: 'Geist', system-ui, sans-serif;
+      --font-serif: 'Instrument Serif', serif;
+      --font-mono: 'Geist Mono', ui-monospace, monospace;
+    }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      min-height: 100vh;
+      padding: 2.5rem 2rem;
+      color: var(--color-ink);
+    }
+    .container {
+      max-width: 1160px;
+      margin: 0 auto;
+    }
+    .header {
+      margin-bottom: 2rem;
+    }
+    .header-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.875rem, 3vw + 1rem, 2.75rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      font-size: 0.9375rem;
+      line-height: 1.6;
+      color: var(--color-muted);
+      max-width: 72ch;
+    }
+    .diagram-container {
+      background: var(--color-paper-2);
+      border-radius: 8px;
+      border: 1px solid var(--color-rule);
+      padding: 1.5rem;
+      overflow-x: auto;
+    }
+    svg {
+      width: 100%;
+      min-width: 980px;
+      display: block;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr 0.95fr;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    @media (max-width: 880px) {
+      .cards { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 6px;
+      border: 1px solid var(--color-rule);
+      padding: 1.25rem;
+    }
+    .card .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.5625rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid rgba(45,49,66,0.08);
+    }
+    .card-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    .card-dot.link { background: var(--color-link); }
+    .card-dot.coral { background: var(--color-accent); }
+    .card-dot.muted { background: var(--color-muted); }
+    .card h3 {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    .card p, .card ul {
+      color: var(--color-muted);
+      font-size: 0.8125rem;
+      line-height: 1.55;
+      list-style: none;
+    }
+    .card li {
+      margin-bottom: 0.4rem;
+      padding-left: 0.875rem;
+      position: relative;
+    }
+    .card li::before {
+      content: '—';
+      position: absolute;
+      left: 0;
+      color: rgba(45,49,66,0.30);
+      font-size: 0.75rem;
+    }
+    .card code {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      background: rgba(45,49,66,0.06);
+      padding: 0.1rem 0.3rem;
+      border-radius: 3px;
+    }
+    .footer {
+      margin-top: 2rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid rgba(45,49,66,0.10);
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      color: var(--color-soft);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <p class="header-eyebrow">UML Deployment & Architecture · MyNetMate Development</p>
+      <h1>Network Discovery Dev Environment</h1>
+      <p class="subtitle">Decoupled 4-tier development architecture: Windows Web UI communicating over HTTP REST to a WSL2 Containerlab Python Backend, delegating discovery to the in-process <code>oxian_py</code> engine using pure SNMP &amp; LLDP MIB crawling across virtual network simulation nodes.</p>
+    </div>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 1024 496" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="dev-discovery-title dev-discovery-desc">
+        <title id="dev-discovery-title">Network Discovery Dev Environment Architecture</title>
+        <desc id="dev-discovery-desc">UML Deployment diagram displaying isolated boundaries from Windows Web Frontend to WSL2 Containerlab Python backend, custom oxian_py SNMP and LLDP discovery library, and simulated network device containers.</desc>
+
+        <defs>
+          <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="1" cy="1" r="0.9" fill="rgba(45,49,66,0.10)"/>
+          </pattern>
+          <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/>
+          </marker>
+          <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/>
+          </marker>
+          <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/>
+          </marker>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#f5f5f5"/>
+        <rect width="100%" height="100%" fill="url(#dots)" opacity="0.45"/>
+
+        <!-- ==================== ZONES (Drawn First) ==================== -->
+        <!-- Zone 1: Windows 11 Host -->
+        <rect x="32" y="32" width="256" height="376" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.20)" stroke-width="0.8" stroke-dasharray="4,4"/>
+        <rect x="48" y="36" width="144" height="12" fill="#f5f5f5"/>
+        <text x="120" y="45" fill="rgba(45,49,66,0.50)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">WINDOWS 11 HOST (DEV)</text>
+
+        <!-- Zone 2: WSL2 / Linux Subsystem -->
+        <rect x="312" y="32" width="680" height="376" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.20)" stroke-width="0.8" stroke-dasharray="4,4"/>
+        <rect x="328" y="36" width="224" height="12" fill="#f5f5f5"/>
+        <text x="440" y="45" fill="rgba(45,49,66,0.50)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">WSL2 LINUX · CONTAINERLAB ENGINE</text>
+
+        <!-- Nested Sub-zone: Containerlab Virtual Network Simulation -->
+        <rect x="664" y="68" width="312" height="324" rx="8" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.25)" stroke-width="0.8" stroke-dasharray="4,4"/>
+        <rect x="680" y="72" width="208" height="12" fill="#f5f5f5"/>
+        <text x="784" y="81" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">CLAB-MGMT BR (172.20.20.0/24)</text>
+
+        <!-- ==================== CONNECTORS & PATHS (Drawn Before Nodes) ==================== -->
+        <!-- Path 1: Web Frontend -> Backend Container (Cross-Zone HTTP REST) -->
+        <line x1="264" y1="184" x2="336" y2="184" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+
+        <!-- Path 2: FastAPI Router -> oxian_py Engine (Internal Python Import Call) -->
+        <line x1="472" y1="180" x2="472" y2="216" stroke="#eb6c36" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+
+        <!-- Path 3: oxian_py -> Router 1 (Orthogonal Elbow with r=8) -->
+        <path d="M 596,252 H 632 Q 640,252 640,244 V 136 Q 640,128 648,128 H 688" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+        <!-- Path 4: oxian_py -> Switch 1 (Orthogonal Elbow with r=8) -->
+        <path d="M 596,280 H 648 Q 656,280 656,272 V 228 Q 656,220 664,220 H 688" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+        <!-- Path 5: oxian_py -> SNMPSim (Orthogonal Elbow with r=8) -->
+        <path d="M 596,308 H 632 Q 640,308 640,316 V 304 Q 640,312 648,312 H 688" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+        <!-- ==================== CONNECTOR LABELS (With Opaque Mask Rect) ==================== -->
+        <!-- Label 1: HTTP REST -->
+        <rect x="272" y="164" width="56" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="300" y="173" fill="#2e5aa8" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">HTTP REST</text>
+
+        <!-- Label 2: PYTHON CALL -->
+        <rect x="480" y="190" width="80" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="520" y="199" fill="#eb6c36" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">IN-PROC CALL</text>
+
+        <!-- Label 3: SNMP SYSINFO -->
+        <rect x="612" y="144" width="64" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="644" y="153" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">SNMP GET</text>
+
+        <!-- Label 4: LLDP MIB -->
+        <rect x="612" y="244" width="64" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="644" y="253" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">LLDP WALK</text>
+
+        <!-- Label 5: UDP 161 -->
+        <rect x="616" y="324" width="56" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="644" y="333" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">UDP:161</text>
+
+        <!-- ==================== NODES & ARTIFACTS ==================== -->
+        <!-- Node 1: Web Frontend (Windows) -->
+        <rect x="48" y="104" width="216" height="248" rx="6" fill="#f5f5f5"/>
+        <rect x="48" y="104" width="216" height="248" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <rect x="56" y="112" width="48" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="80" y="121" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">WEB UI</text>
+        <rect x="180" y="112" width="76" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.30)" stroke-width="0.8"/>
+        <text x="218" y="121" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">PORT 3000</text>
+        
+        <text x="156" y="148" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">mynetmate-website</text>
+        <text x="156" y="164" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Repo: Mynetmate/website</text>
+
+        <!-- Artifact Chips in Web UI -->
+        <rect x="56" y="180" width="200" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
+        <text x="64" y="196" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">React 19 + Vite 8</text>
+        <text x="248" y="196" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">Bun dev</text>
+
+        <rect x="56" y="212" width="200" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
+        <text x="64" y="228" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">TanStack Router</text>
+        <text x="248" y="228" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">Client SPA</text>
+
+        <rect x="56" y="244" width="200" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
+        <text x="64" y="260" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">React Flow v11</text>
+        <text x="248" y="260" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">Topology</text>
+
+        <!-- Isolation Badge on Web UI -->
+        <rect x="56" y="284" width="200" height="56" rx="4" fill="rgba(46,90,168,0.06)" stroke="#2e5aa8" stroke-width="0.8" stroke-dasharray="2,2"/>
+        <text x="64" y="300" fill="#2e5aa8" font-size="8" font-weight="600" font-family="'Geist Mono', monospace">ISOLATION BOUNDARY #1</text>
+        <text x="64" y="316" fill="#4f5d75" font-size="8" font-family="'Geist', sans-serif">Only calls HTTP endpoint.</text>
+        <text x="64" y="328" fill="#4f5d75" font-size="8" font-family="'Geist', sans-serif">No access to Python or SNMP.</text>
+
+        <!-- Node 2: Server Python Container (WSL2 / Containerlab) -->
+        <rect x="336" y="68" width="280" height="324" rx="6" fill="#f5f5f5"/>
+        <rect x="336" y="68" width="280" height="324" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <rect x="344" y="76" width="68" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="378" y="85" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CONTAINER</text>
+        <rect x="536" y="76" width="72" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.30)" stroke-width="0.8"/>
+        <text x="572" y="85" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">172.20.20.2</text>
+
+        <text x="476" y="106" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">mynetmate-backend</text>
+        <text x="476" y="120" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Repo: Mynetmate/backend · Port 8000</text>
+
+        <!-- FastAPI Endpoint Chip -->
+        <rect x="348" y="132" width="256" height="48" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
+        <text x="356" y="148" fill="#2d3142" font-size="12" font-weight="500" font-family="'Geist', sans-serif">FastAPI Service Controller</text>
+        <text x="596" y="148" fill="#2e5aa8" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">app.main</text>
+        <text x="356" y="168" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">POST /api/v1/network-discovery/scan</text>
+
+        <!-- In-Process Focal Node: oxian_py Library Engine -->
+        <rect x="348" y="216" width="256" height="164" rx="6" fill="#f5f5f5"/>
+        <rect x="348" y="216" width="256" height="164" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1.2"/>
+        <rect x="356" y="224" width="76" height="12" rx="2" fill="transparent" stroke="rgba(235,108,54,0.50)" stroke-width="0.8"/>
+        <text x="394" y="233" fill="#eb6c36" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">LIB · ENGINE</text>
+        <text x="596" y="233" fill="#eb6c36" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">oxian_py</text>
+
+        <text x="476" y="254" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">oxian_py Discovery Core</text>
+        <text x="476" y="268" fill="#eb6c36" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Repo: oxian / oxian_py</text>
+
+        <rect x="356" y="278" width="240" height="24" rx="4" fill="#ffffff" stroke="rgba(235,108,54,0.40)" stroke-width="0.8"/>
+        <text x="364" y="294" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">1. SNMP SysInfo &amp; IF-MIB</text>
+        <text x="588" y="294" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">v2c/v3 GET</text>
+
+        <rect x="356" y="308" width="240" height="24" rx="4" fill="#ffffff" stroke="rgba(235,108,54,0.40)" stroke-width="0.8"/>
+        <text x="364" y="324" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">2. LLDP Neighbor Crawler</text>
+        <text x="588" y="324" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">LLDP-MIB Walk</text>
+
+        <rect x="356" y="340" width="240" height="32" rx="4" fill="rgba(235,108,54,0.06)" stroke="none"/>
+        <text x="364" y="354" fill="#eb6c36" font-size="8" font-weight="600" font-family="'Geist Mono', monospace">ISOLATION BOUNDARY #2</text>
+        <text x="364" y="365" fill="#4f5d75" font-size="8" font-family="'Geist', sans-serif">Package is purely network agnostic.</text>
+
+        <!-- Simulated Device Nodes (Inside Containerlab Topology) -->
+        <!-- Device 1: Simulated Router -->
+        <rect x="688" y="96" width="272" height="72" rx="6" fill="#f5f5f5"/>
+        <rect x="688" y="96" width="272" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <rect x="696" y="104" width="56" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="724" y="113" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">ROUTER</text>
+        <text x="952" y="113" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">172.20.20.11</text>
+        <text x="824" y="132" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">clab-r1 (Router Node)</text>
+        <rect x="696" y="140" width="256" height="20" rx="3" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
+        <text x="704" y="154" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">cEOS / FRRouting</text>
+        <text x="944" y="154" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">SNMP Enabled</text>
+
+        <!-- Device 2: Simulated Switch -->
+        <rect x="688" y="184" width="272" height="72" rx="6" fill="#f5f5f5"/>
+        <rect x="688" y="184" width="272" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <rect x="696" y="192" width="56" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="724" y="201" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SWITCH</text>
+        <text x="952" y="201" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">172.20.20.12</text>
+        <text x="824" y="220" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">clab-sw1 (Switch Node)</text>
+        <rect x="696" y="228" width="256" height="20" rx="3" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
+        <text x="704" y="242" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">LLDP Neighbor Provider</text>
+        <text x="944" y="242" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">MIB 1.0.8802</text>
+
+        <!-- Device 3: SNMP Mock / SNMPSim -->
+        <rect x="688" y="272" width="272" height="104" rx="6" fill="#f5f5f5"/>
+        <rect x="688" y="272" width="272" height="104" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <rect x="696" y="280" width="64" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="728" y="289" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">MOCK/SIM</text>
+        <text x="952" y="289" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">172.20.20.13:161</text>
+        <text x="824" y="308" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">snmpsim-lab (Mock Server)</text>
+        <rect x="696" y="316" width="256" height="20" rx="3" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
+        <text x="704" y="330" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">SNMP Mock Data Files (.snmprec)</text>
+        <text x="944" y="330" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">UDP 161</text>
+
+        <!-- Isolation Badge on Devices -->
+        <rect x="696" y="344" width="256" height="24" rx="3" fill="rgba(45,49,66,0.04)" stroke="none"/>
+        <text x="704" y="356" fill="#4f5d75" font-size="8" font-weight="600" font-family="'Geist Mono', monospace">ISOLATION BOUNDARY #3 · SNMP PROTOCOL ONLY</text>
+
+        <!-- ==================== LEGEND STRIP (Horizontal at bottom) ==================== -->
+        <line x1="32" y1="432" x2="992" y2="432" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/>
+        <text x="32" y="452" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+
+        <!-- Legend Item 1: Link Arrow -->
+        <line x1="96" y1="448" x2="128" y2="448" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+        <text x="136" y="452" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace">HTTP REST / External API</text>
+
+        <!-- Legend Item 2: Accent (oxian_py) -->
+        <rect x="304" y="442" width="12" height="12" rx="2" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+        <text x="324" y="452" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace">Discovery Engine (oxian_py Focal)</text>
+
+        <!-- Legend Item 3: Internal Arrow -->
+        <line x1="560" y1="448" x2="592" y2="448" stroke="#eb6c36" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+        <text x="600" y="452" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace">Python Library Dependency</text>
+
+        <!-- Legend Item 4: SNMP UDP 161 -->
+        <line x1="784" y1="448" x2="816" y2="448" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <text x="824" y="452" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace">SNMP / UDP 161 (LLDP MIB Crawl)</text>
+      </svg>
+    </div>
+
+    <!-- ==================== SUMMARY CARDS (Varied Widths) ==================== -->
+    <div class="cards">
+      <!-- Card 1: Boundary & Repos -->
+      <div class="card">
+        <p class="eyebrow">REPOSITORIES &amp; HOST LINKAGE</p>
+        <div class="card-header">
+          <span class="card-dot link"></span>
+          <h3>Repo Decoupling &amp; Ports</h3>
+        </div>
+        <ul>
+          <li><strong>Mynetmate/mynetmate:</strong> Meta workspace code root.</li>
+          <li><strong>Mynetmate/website (Windows):</strong> React 19 SPA running on <code>http://localhost:3000</code>.</li>
+          <li><strong>Mynetmate/backend (WSL2):</strong> FastAPI container exposing port <code>8000</code>.</li>
+          <li><strong>oxian / oxian_py:</strong> Core discovery package installed as an editable module inside backend.</li>
+          <li><strong>Containerlab (WSL2):</strong> Virtual network bridge (<code>clab-mgmt</code>) hosting simulated nodes.</li>
+        </ul>
+      </div>
+
+      <!-- Card 2: Discovery Engine & Logic -->
+      <div class="card">
+        <p class="eyebrow">PURE SNMP &amp; LLDP DISCOVERY</p>
+        <div class="card-header">
+          <span class="card-dot coral"></span>
+          <h3>oxian_py Execution Flow</h3>
+        </div>
+        <ul>
+          <li><strong>No ICMP / No Ping:</strong> Avoids firewall blocking and unreliable ping sweeps.</li>
+          <li><strong>Step 1 (SNMP Polling):</strong> Uses SNMP GET (UDP 161) to retrieve system info (<code>sysName</code>, <code>sysDescr</code>, <code>ifTable</code>) from the seed device.</li>
+          <li><strong>Step 2 (LLDP Neighbor Crawl):</strong> Uses SNMP WALK on <code>lldpRemTable</code> (LLDP MIB <code>1.0.8802</code>) to discover adjacent neighbors and iteratively crawl the topology.</li>
+        </ul>
+      </div>
+
+      <!-- Card 3: Troubleshooting Checklist -->
+      <div class="card">
+        <p class="eyebrow">TROUBLESHOOTING GUIDE</p>
+        <div class="card-header">
+          <span class="card-dot muted"></span>
+          <h3>Decoupled Failure Isolation</h3>
+        </div>
+        <ul>
+          <li><strong>UI ↔ API Fail:</strong> Verify WSL2 host IP, CORS settings, and FastAPI health (port 8000).</li>
+          <li><strong>Backend ↔ oxian Fail:</strong> Check Python editable import, Pydantic request payload, and container logs.</li>
+          <li><strong>oxian ↔ Device Fail:</strong> Check SNMP community string (<code>public</code>), UDP port 161 reachability, and LLDP MIB status.</li>
+          <li><strong>Containerlab Fail:</strong> Run <code>clab inspect</code> to check container health and virtual bridge links.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer">
+      <span>MyNetMate Project · Network Discovery Architecture</span>
+      <span>UML Deployment &amp; Component Specification</span>
+    </div>
+  </div>
+</body>
+</html>

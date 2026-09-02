@@ -11,19 +11,19 @@ VALUES
     ('d1000000-0000-0000-0000-000000000001', '192.168.1.1', 'completed', 2, 1, 420, NOW())
 ON CONFLICT (id) DO NOTHING;
 
--- 2. Seed Devices (3NF: Atomic attributes, unique IP)
-INSERT INTO devices (id, ip, hostname, description, vendor, chassis_id, is_managed, status)
+-- 2. Seed Devices (3NF: Atomic attributes, unique management_ip)
+INSERT INTO devices (id, management_ip, hostname, description, vendor, chassis_mac, is_managed, status, discovery_method)
 VALUES 
-    ('a0000000-0000-0000-0000-000000000001', '192.168.1.1', 'SW-CORE-01', 'Cisco IOS Software, C3750 Software (C3750-IPSERVICESK9-M)', 'Cisco', '00:1A:2B:3C:4D:01', TRUE, 'online'),
-    ('a0000000-0000-0000-0000-000000000002', '192.168.1.2', 'RT-EDGE-01', 'MikroTik RouterOS 7.12.1 (CHR)', 'MikroTik', '00:1A:2B:3C:4D:02', TRUE, 'online')
-ON CONFLICT (ip) DO NOTHING;
+    ('a0000000-0000-0000-0000-000000000001', '192.168.1.1', 'SW-CORE-01', 'Cisco IOS Software, C3750 Software (C3750-IPSERVICESK9-M)', 'cisco', '00:1a:2b:3c:4d:01', TRUE, 'online', 'auto_discovery'),
+    ('a0000000-0000-0000-0000-000000000002', '192.168.1.2', 'RT-EDGE-01', 'MikroTik RouterOS 7.12.1 (CHR)', 'mikrotik', '00:1a:2b:3c:4d:02', TRUE, 'online', 'auto_discovery')
+ON CONFLICT (management_ip) DO NOTHING;
 
 -- 3. Seed Interfaces (3NF: Composite key device_id + if_index)
 INSERT INTO device_interfaces (id, device_id, if_index, name, mac_address, admin_status, oper_status)
 VALUES 
-    ('b0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 1, 'GigabitEthernet1/0/1', '00:1A:2B:3C:4D:11', 'Up', 'Up'),
-    ('b0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 2, 'GigabitEthernet1/0/2', '00:1A:2B:3C:4D:12', 'Up', 'Up'),
-    ('b0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000002', 1, 'ether1', '00:1A:2B:3C:4D:21', 'Up', 'Up')
+    ('b0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 1, 'GigabitEthernet1/0/1', '00:1a:2b:3c:4d:11', 'Up', 'Up'),
+    ('b0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', 2, 'GigabitEthernet1/0/2', '00:1a:2b:3c:4d:12', 'Up', 'Up'),
+    ('b0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000002', 1, 'ether1', '00:1a:2b:3c:4d:21', 'Up', 'Up')
 ON CONFLICT (device_id, if_index) DO NOTHING;
 
 -- 4. Seed Topology Link (3NF: Source Interface Gi1/0/1 <--> Target Interface ether1)
