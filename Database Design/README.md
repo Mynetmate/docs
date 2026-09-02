@@ -9,9 +9,17 @@ Database Design/
 ├── 00_Authentication/
 ├── 01_Dashboard&Monitoring/
 ├── 02_Device Inventory Management/
-│   ├── device_inventory.sql
+│   ├── README.md
 │   ├── device_inventory.dbml
-│   └── README.md
+│   ├── device_inventory.sql
+│   └── sql/
+│       ├── 00_enums.sql
+│       ├── 01_credentials.sql
+│       ├── 02_sites_and_groups.sql
+│       ├── 03_devices.sql
+│       ├── 04_device_interfaces.sql
+│       ├── 05_device_enrollment_attempts.sql
+│       └── 99_seed_data.sql
 ├── 03_Network Topology Visualization/
 ├── 04_Network Discovery/
 │   ├── README.md
