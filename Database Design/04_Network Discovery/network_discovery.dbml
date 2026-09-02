@@ -1,6 +1,7 @@
 // =============================================================================
 // DBML Schema: 04_Network Discovery (3NF Normalized)
 // Scope: Strictly for Network Discovery (Oxian Engine Output)
+// Reconciled: Uses Unified Master devices table naming (management_ip, chassis_mac)
 // Usage: Copy-paste to https://dbdiagram.io to visualize instantly!
 // =============================================================================
 
@@ -8,6 +9,13 @@ Enum device_status_enum {
   online
   offline
   unreachable
+  maintenance
+}
+
+Enum discovery_method_enum {
+  manual_enrollment
+  auto_discovery
+  csv_import
 }
 
 Enum interface_status_enum {
@@ -32,23 +40,26 @@ Enum scan_status_enum {
 }
 
 // -----------------------------------------------------------------------------
-// Core Entity: devices (3NF: Unique Candidate Key = ip)
+// Core Entity: devices (3NF: Unique Candidate Key = management_ip)
 // -----------------------------------------------------------------------------
 Table devices {
-  id uuid [pk, default: `uuid_generate_v4()`]
-  ip inet [not null, unique]
+  id uuid [pk, default: `gen_random_uuid()`]
+  management_ip inet [not null, unique]
   hostname varchar(255)
   description text
   vendor varchar(50) [default: 'Unknown']
+  chassis_mac macaddr
   chassis_id varchar(100)
   is_managed boolean [default: true]
   status device_status_enum [default: 'online']
+  discovery_method discovery_method_enum [default: 'auto_discovery']
   last_discovered_at timestamptz [default: `now()`]
+  last_seen_at timestamptz [default: `now()`]
   created_at timestamptz [default: `now()`]
   updated_at timestamptz [default: `now()`]
 
   indexes {
-    ip [name: 'idx_devices_ip']
+    management_ip [name: 'idx_devices_management_ip']
     hostname [name: 'idx_devices_hostname']
     vendor [name: 'idx_devices_vendor']
   }
@@ -58,7 +69,7 @@ Table devices {
 // Weak Entity: device_interfaces (3NF: Composite AK = device_id + if_index)
 // -----------------------------------------------------------------------------
 Table device_interfaces {
-  id uuid [pk, default: `uuid_generate_v4()`]
+  id uuid [pk, default: `gen_random_uuid()`]
   device_id uuid [not null, ref: > devices.id]
   if_index integer [not null]
   name varchar(255) [not null]
@@ -78,7 +89,7 @@ Table device_interfaces {
 // Relation: topology_links (3NF: Eliminates transitive device redundancy)
 // -----------------------------------------------------------------------------
 Table topology_links {
-  id uuid [pk, default: `uuid_generate_v4()`]
+  id uuid [pk, default: `gen_random_uuid()`]
   source_interface_id uuid [not null, ref: > device_interfaces.id]
   target_interface_id uuid [ref: > device_interfaces.id]
   target_device_id uuid [ref: > devices.id]
@@ -98,7 +109,7 @@ Table topology_links {
 // Audit Entity: discovery_scans (3NF: Execution Metrics)
 // -----------------------------------------------------------------------------
 Table discovery_scans {
-  id uuid [pk, default: `uuid_generate_v4()`]
+  id uuid [pk, default: `gen_random_uuid()`]
   seed_ip inet [not null]
   status scan_status_enum [default: 'completed']
   devices_count integer [default: 0]
