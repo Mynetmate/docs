@@ -8,7 +8,7 @@ Audit Trail ทำหน้าที่เป็นแหล่งเก็บ�
 ## ✅ In Scope (P1)
 - **Centralized Storage:** ใช้ตาราง `audit_logs` ใน Central Schema เป็นตารางเดียวสำหรับเก็บข้อมูลเหตุการณ์ทั้งหมด
 - **Append-Only Policy:** ไม่มี API สำหรับแก้ไขหรือลบประวัติ
-- **Transaction Bounding:** การเขียน Audit Log ต้องเกาะไปกับ Business Transaction เดียวกัน (เพื่อป้องกันข้อมูลไม่ซิงค์กัน)
+- **Transaction Bounding:** Event ที่ผูกกับ Business Mutation ต้องใช้ Transaction เดียวกับ Business Action เพื่อ Commit/Rollback พร้อมกัน ส่วน Intentional Failure/Denial Event เช่น `user.login_failed` และ `auth.permission_denied` ต้องใช้ Audit Transaction แยกที่ Commit ได้แม้ Request หลักถูกปฏิเสธ
 - **Redaction at Source:** PII, Password, และ Token ต้องถูกปกปิดหรือตัดออกก่อนที่จะ Insert ลงตาราง `audit_logs` เสมอ
 - **Full Audit API:** มี API สำหรับดึงข้อมูลทั้งหมด พร้อม Filter และ Pagination สำหรับ Role **Admin** เท่านั้น
 - **Producer Integration:** รองรับการรับข้อมูลจาก Feature หลัก ได้แก่ Auth, Device Inventory, Config Generation, CIS Benchmark และ Settings

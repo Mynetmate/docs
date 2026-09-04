@@ -1,6 +1,6 @@
 # คำอธิบายคำศัพท์ Network Topology Visualization (NTV)
 
-เอกสารนี้อธิบายคำศัพท์เฉพาะที่ใช้ใน [01_MVP - MyNetMate NTV.md](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/03_Network Topology Visualization(Naphat)/01_MVP - MyNetMate NTV.md) ด้วยภาษาง่าย ๆ โดยยึดบริบทของ MyNetMate ไม่ได้มุ่งเป็นนิยามสากลที่ครอบคลุมระบบเครือข่ายทุกประเภท
+เอกสารนี้อธิบายคำศัพท์เฉพาะที่ใช้ใน [01_MVP - MyNetMate NTV.md](<01_MVP - MyNetMate NTV.md>) ด้วยภาษาง่าย ๆ โดยยึดบริบทของ MyNetMate ไม่ได้มุ่งเป็นนิยามสากลที่ครอบคลุมระบบเครือข่ายทุกประเภท
 
 > [!NOTE]
 > ไฟล์นี้เป็นเอกสารช่วยอ่าน ไม่ใช่ Source of Truth สำหรับชื่อตารางหรือขอบเขตการส่งมอบ หากคำศัพท์หรือชื่อตารางขัดกับ `01_MVP - MyNetMate NTV.md` หรือ `02_Database Schema.md` ให้ยึดสองไฟล์นั้นตามลำดับ
@@ -546,7 +546,7 @@ Vendor ที่มีแผนทดลองรองรับ แต่ยั
 | `is_pinned` | Node ถูกล็อกตำแหน่งหรือไม่ |
 | `is_hidden` | Node ถูกซ่อนใน View หรือไม่ |
 
-ชื่อ Field สำหรับ MVP ให้ยึด [02_Database Schema.md](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/03_Network Topology Visualization(Naphat)/02_Database Schema.md) ส่วน Field ที่ระบุว่า Future Enhancement ยังไม่ต้องสร้างใน Schema ปัจจุบัน
+ชื่อ Field สำหรับ MVP ให้ยึด [02_Database Schema.md](<02_Database Schema.md>) ส่วน Field ที่ระบุว่า Future Enhancement ยังไม่ต้องสร้างใน Schema ปัจจุบัน
 
 ## 10. รหัสที่ใช้จัดหมวดในเอกสาร
 

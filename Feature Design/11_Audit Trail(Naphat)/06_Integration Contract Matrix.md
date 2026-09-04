@@ -5,8 +5,8 @@
 | Feature | สถานะการตรวจสอบ | รายละเอียดความสอดคล้อง | Proposed Cross-Feature Delta |
 | :--- | :--- | :--- | :--- |
 | **Central Schema** (`Data Information 27-06-69.md`) | ✅ สอดคล้องสมบูรณ์ | โครงสร้าง 9 ฟิลด์ (ตัด `ip_address` ออกใน P1) ของตาราง `audit_logs` รองรับ MVP ครบถ้วน และได้ปรับคำอธิบายคอลัมน์ `action` เป็น "Canonical Dotted Event Format" ตรงกับ Audit Catalog แล้ว | - ไม่มี - |
-| **Authentication & RBAC** | ⚠️ Delta pending confirmation | ใช้ Cursor ร่วมกัน, ยึดสเปก Audit เป็น Source of Truth, และรอการยืนยันว่าจะไม่ส่ง Client IP เข้า Audit writer | รอ Owner ยืนยัน |
-| **Dashboard & Monitoring** | ⚠️ Delta pending confirmation | D&M กำหนดให้ `GET /api/dashboard/recent-activity` อ่านค่าแบบ Read-only, แสดงผลด้วย Allowlist **และรอการยืนยันว่าจะไม่ส่งหรือเลือก Client/source IP ไปแสดงผล** | รอ Owner ยืนยัน |
+| **Authentication & RBAC** | ✅ Reconciled | Auth ใช้ Wrapper 4 Business Arguments, ไม่ส่ง Client IP/`description`, ยึด Global Registry และแยก Business Transaction ออกจาก Intentional Audit Transaction สำหรับ Failed Login/Permission Denied แล้ว | - ไม่มี - |
+| **Dashboard & Monitoring** | ✅ Reconciled | `GET /api/dashboard/recent-activity` อ่านแบบ Read-only ผ่าน ORM, ใช้ Positive Allowlist/Cursor และยืนยันว่าไม่เลือกหรือส่ง IP, User-Agent, Error Detail, Secret หรือ Full Description แม้ผู้เรียกเป็น Admin | - ไม่มี - |
 
 ## สรุปภาพรวม (Conclusion)
-โครงสร้างสถาปัตยกรรมและ Contract มีการแก้ไขโครงสร้างล่าสุด (ตัด `ip_address` ออก) ส่งผลให้อยู่ในสถานะ **Delta pending confirmation** ระหว่างรอ Owner ของระบบ Authentication และ Dashboard & Monitoring รับทราบและยืนยัน จึงจะสามารถประกาศ Approved อย่างเป็นทางการเพื่อนำไปใช้พัฒนาได้
+Central Schema, Authentication และ Dashboard & Monitoring ยืนยัน Contract เดียวกันแล้ว: `audit_logs` ไม่มี `ip_address`, Producer ใช้ Global Registry/Writer กลาง และ D&M เปิดเผยเฉพาะข้อมูล Recent Activity ที่ผ่าน Allowlist/Redaction สถานะ Integration จึงเป็น **Approved & Reconciled สำหรับ P1**

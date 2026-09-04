@@ -26,7 +26,7 @@ Dashboard P1 มุ่งสนับสนุนระดับ 1–2 โดย
 	จำนวน Critical Validation Failures 
 
 ## การเทียบเคียงระบบอุตสาหกรรม
-ระบบอย่าง [[02_feature/01_Dashboard&Monitoring(Naphat)/Cisco Catalyst Center]] ใช้ Health Score, Streaming Telemetry, Latency, Packet Loss และข้อมูลเชิงลึกของแอปพลิเคชัน [9][11][12] ความสามารถเหล่านี้มีประโยชน์ในระดับองค์กร แต่เกินความจำเป็นสำหรับ P1 ของ MyNetMate
+ระบบอย่าง [[../Archive_Research/Cisco Catalyst Center]] ใช้ Health Score, Streaming Telemetry, Latency, Packet Loss และข้อมูลเชิงลึกของแอปพลิเคชัน [9][11][12] ความสามารถเหล่านี้มีประโยชน์ในระดับองค์กร แต่เกินความจำเป็นสำหรับ P1 ของ MyNetMate
 
 P1 จึงใช้สถานะล่าสุดจาก Periodic ICMP Check และข้อมูลที่มีอยู่แล้วใน Device Inventory, Security Validation และ Audit Trail 
 	โดยต้องแสดงเวลาตรวจสอบล่าสุดอย่างชัดเจน และไม่เรียกข้อมูลดังกล่าวว่า Real-time
