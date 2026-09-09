@@ -11,7 +11,7 @@
 | `demo_operator` | `operator` | `MYNETMATE_SEED_OPERATOR_PASSWORD` |
 | `demo_viewer` | `viewer` | `MYNETMATE_SEED_VIEWER_PASSWORD` |
 
-*(หมายเหตุ: ระบบจะดึงรหัสผ่านจาก Environment Variable มาเข้ารหัสด้วย `Argon2id` ก่อนบันทึกลง Database เสมอ)*
+*(หมายเหตุ: ระบบจะดึงรหัสผ่านจาก Environment Variable มา Hash ด้วย Password Hasher กลาง `Argon2id m=19456 KiB, t=2, p=1` ก่อนบันทึกลง Database เสมอ ห้ามสร้าง Hasher Configuration แยกสำหรับ Seed)*
 
 ## 2. Seed Script Requirements
 
@@ -28,3 +28,14 @@
 
 ### 2.3 Password Validation (Fail-Closed)
 หากค่า Environment Variable สำหรับ Password ของ Seed User ใดๆ มีค่าว่าง (Empty), ไม่มีการตั้งค่า (Undefined), หรือไม่ผ่าน Password Policy (สั้นกว่า 12 ตัวอักษร) สคริปต์ต้อง **`exit non-zero` ทันทีก่อนแตะฐานข้อมูล** พร้อมแสดง Error Message ระบุว่าตัวแปรใดหายไป
+
+## 3. Auth Runtime Security Environment
+
+| Environment Variable | P1 Policy |
+| :--- | :--- |
+| `AUTH_RATE_LIMIT_HMAC_KEY` | Secret สำหรับ HMAC Normalized Login Identifier ต้องเป็นค่าสุ่มอย่างน้อย 32 bytes, ห้ามใช้ร่วมกับ Session Token/Database Secret และห้าม Log ค่า; ถ้าไม่มีค่าหรือสั้นกว่าเกณฑ์ Backend Startup ต้อง Fail Closed ก่อนเปิดรับ Request |
+| `AUTH_TRUST_PROXY_HEADERS` | ค่าเริ่มต้น `false`; เปิดเป็น `true` เฉพาะ Deployment ที่มี Reverse Proxy ซึ่งทีมควบคุม |
+| `AUTH_TRUSTED_PROXY_IPS` | ต้องระบุ Exact Proxy IP Allowlist เมื่อ `AUTH_TRUST_PROXY_HEADERS=true`; ห้ามใช้ `*` และถ้าว่างต้อง Fail Closed โดยไม่เชื่อ Forwarded Header |
+| `AUTH_RATE_LIMIT_MAX_KEYS` | ค่าเริ่มต้น `10000` สำหรับ Bounded In-memory Store |
+
+P1 Deployment ต้องใช้ FastAPI/Uvicorn เพียงหนึ่ง Process/Worker เมื่อเลือก In-memory Rate Limiter หากจะใช้หลาย Worker หรือหลาย Instance ต้องเปลี่ยนเป็น Shared Rate-limit Store และอัปเดต Architecture Contract ก่อน ห้ามใช้ Per-process Counter หลายชุดเพราะทำให้ Threshold ถูกหลบได้

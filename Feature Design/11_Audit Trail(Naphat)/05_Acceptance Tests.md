@@ -6,6 +6,11 @@
 - **สถานการณ์:** ผู้ใช้พยายามแก้ไขอุปกรณ์ (Device Update) แต่เกิด Error ที่ระดับฐานข้อมูล (เช่น Unique constraint ของ IP ซ้ำ) ทำให้ Business Action ถูก Rollback
 - **สิ่งที่คาดหวัง:** Audit Log เหตุการณ์ `device.update` จะต้องไม่ปรากฏในฐานข้อมูล (ต้องถูก Rollback ไปพร้อมกับ Business Action ยกเว้นกรณีที่เป็นการตั้งใจดักจับ Error และบันทึกเป็น `failure` ใหม่)
 
+### Authentication Transaction Cases
+- Login สำเร็จต้อง Insert `auth_sessions` และ `user.login_success` ใน Transaction เดียวกัน หาก Audit Write ล้มเหลวต้องไม่มี Session Row/Cookie และตอบ `503 AUTH_SERVICE_UNAVAILABLE`
+- Login ล้มเหลวต้อง Commit `user.login_failed` ด้วย Intentional Audit Transaction แยกก่อนตอบ `401 AUTH_INVALID_CREDENTIALS`
+- Permission Denied ต้อง Commit `auth.permission_denied` แม้ Business Request ถูกปฏิเสธด้วย `403`; หาก Mandatory Audit Write ล้มเหลวต้อง Fail Closed ด้วย `503 AUTH_SERVICE_UNAVAILABLE`
+
 ## Test Case 2: Append-Only Policy
 - **สถานการณ์:** มีผู้ไม่หวังดีหรือมีโค้ดบั๊กพยายามยิงคำสั่ง `UPDATE audit_logs SET...` หรือเรียกใช้ `session.delete(audit_log_entry)`
 - **สิ่งที่คาดหวัง:**
@@ -59,3 +64,11 @@
   - เมื่อ Query ดูข้อมูลดิบ (Raw Row) ในตาราง `audit_logs` โดยตรง ค่า `198.51.100.42` ต้องไม่ถูกฝังอยู่ในคอลัมน์ `description` หรือคอลัมน์อื่นๆ เพื่อรับรองกฎ Redaction at Source
   - `GET /api/audit-logs` ไม่มีคีย์ `ip_address` ในข้อมูลที่ตอบกลับ และค่า `198.51.100.42` ต้องไม่ปรากฏในข้อความ Response (รวมถึงห้ามแฝงใน `description`)
   - `GET /api/dashboard/recent-activity` ไม่มีคีย์ `ip_address` และไม่มีค่า `198.51.100.42` หลุดรอดออกไปเด็ดขาด
+
+## Test Case 10: Auth Wrapper Input Boundary
+- **สถานการณ์:** ตรวจ Signature และการเรียก Auth Adapter สำหรับ Login Success/Failure และ Permission Denied
+- **สิ่งที่คาดหวัง:**
+  - Auth Caller ส่งเฉพาะ `action`, `resource_type`, `resource_id`, `actor_id` เป็น Business Arguments
+  - DB Session/Transaction มาจาก Injected Adapter/Request-scoped Context ไม่ใช่ข้อมูลจาก Client
+  - Auth Caller ไม่มี Argument สำหรับ Client IP หรือ `description`
+  - `description` ที่บันทึกต้องเป็น `null` หรือ Fixed Safe Template ที่ Wrapper/Audit Writer กำหนดเอง และห้ามมี Raw Failed-login Identifier

@@ -55,6 +55,8 @@
 | `user.deactivated` | P1 | `user` | `success` | `null` | actor เป็น Admin, resource เป็น target user |
 | `auth.permission_denied` | P1 | `auth` | `failure` | `authorization_error` | actor เป็น authenticated user ที่ถูกปฏิเสธ; `resource_id` เป็น UUID ของ target (nullable ได้ถ้าเป้าหมายไม่มี UUID) |
 
+**Auth Adapter Contract:** Auth Caller เรียก `record_auth_event(action, resource_type, resource_id, actor_id)` ด้วย 4 Business Arguments เท่านั้น โดย DB Session/Transaction ถูก Inject ผ่าน Adapter/Request-scoped Context Auth Caller ห้ามส่ง Client IP หรือ `description`; Adapter หรือ Audit Writer กำหนด `description` เป็น `null` หรือ Fixed Safe Template ภายใน และห้ามคัดลอก `auth_sessions.ip_address` ลง `audit_logs`
+
 ### 3.2 Mapping สำหรับ P1 Producer อื่นๆ
 | Canonical Action | Phase | Allowed `resource_type` | `result` | Allowed/Required `safe_error_category` | Actor/Resource Binding Rule |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -80,8 +82,8 @@
 1. Action ใดที่ไม่อยู่ใน Registry ต้องถูก **Reject** ก่อน Insert
 2. หากค่า `resource_type`, `result`, `safe_error_category` หรือ Actor/Resource Binding ไม่ตรงตามเงื่อนไขที่กำหนดใน Registry ต้องถูก **Reject** ก่อน Insert
 3. Caller ห้ามส่ง Action หรือ Error Category เข้ามาอย่างอิสระเพื่อ Bypass Catalog เด็ดขาด
-4. ฟังก์ชัน `record_audit_event()` ต้องทำงานอยู่ใน DB Session เดียวกับ Business Transaction
+4. เหตุการณ์ที่ผูกกับ Business Mutation ต้องใช้ DB Session/Transaction เดียวกับ Business Action เพื่อ Commit/Rollback พร้อมกัน ส่วน Security Event ที่เกิดจาก Request ที่ถูกปฏิเสธ เช่น `user.login_failed` และ `auth.permission_denied` ต้องใช้ Intentional Audit Transaction แยกที่ Commit ได้แม้ Business Request ไม่สำเร็จ
 5. ต้องทำกระบวนการ Redaction (ปิดบังข้อมูลความลับ) ก่อนเขียนลงฐานข้อมูล (Write) เสมอ
 6. **Validation Error Policy:** ในระยะ P1 จะไม่มีการบันทึก Audit Log สำหรับ Validation Error หรือ HTTP 400/422 ทั่วไป (เช่น การกรอกฟอร์มผิด) เพื่อลด Log Noise และป้องกันความเสี่ยงที่ข้อมูลดิบใน Request Body จะหลุดเข้ามาใน Description หากมีความจำเป็นต้องใช้ในอนาคต จะต้องกำหนด Canonical Action แยกเฉพาะ และห้ามบันทึก Raw Request Data โดยเด็ดขาด
-
+7. หาก Mandatory Audit Write ล้มเหลว ระบบต้อง Fail Closed; ห้าม Commit Business Mutation/ออก Session และตอบ `503 AUTH_SERVICE_UNAVAILABLE` แบบ Generic
 

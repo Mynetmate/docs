@@ -7,7 +7,7 @@
 
 ```python
 async def record_audit_event(
-    db: AsyncSession,          # ต้องใช้ Session เดียวกับ Business Action เสมอ
+    db: AsyncSession,          # Business transaction หรือ intentional audit transaction ตาม Event Type
     action: str,
     resource_type: str,
     result: str,
@@ -22,6 +22,9 @@ async def record_audit_event(
 1. *ห้ามมี API หรือฟังก์ชันสำหรับการแก้ไข (Update) หรือลบ (Delete) ข้อมูล Audit Log เพื่อรักษา Append-Only Policy*
 2. *ฟังก์ชัน `record_audit_event` จะต้องทำหน้าที่เป็นด่านหน้า (Gatekeeper) โดยตรวจสอบความถูกต้องของ `action`, `resource_type`, `result` และ `safe_error_category` เทียบกับ **Global Action Registry** เสมอ หากข้อมูลไม่ตรงตามสเปค ต้อง Reject ทันที*
 3. *ฟังก์ชันจะต้องมีกระบวนการ Redaction พื้นฐานอยู่ภายใน (Server-side redaction) เพื่อดักจับและลบข้อมูลที่ดูคล้าย Secret, Password หรือ Token ออกจาก `description` ก่อนลง DB เสมอ ไม่ควรคาดหวังให้ Producer ทุกตัวส่งข้อมูลมาถูกต้อง 100%*
+4. *Business Mutation Event ต้องใช้ DB Session/Transaction เดียวกับ Business Action ส่วน `user.login_failed` และ `auth.permission_denied` ต้องใช้ Intentional Audit Transaction แยกที่ Commit ได้แม้ Request หลักถูกปฏิเสธ*
+5. *Auth Caller ใช้ Wrapper ที่รับ 4 Business Arguments เท่านั้นและห้ามส่ง Client IP หรือ `description`; Wrapper/Audit Writer เป็นผู้กำหนด `description=null` หรือ Fixed Safe Template ภายใน*
+6. *หาก Mandatory Audit Write ล้มเหลว ระบบต้อง Fail Closed และตอบ `503 AUTH_SERVICE_UNAVAILABLE`; กรณี Login สำเร็จห้ามออก Session/Cookie หาก Session Row และ Audit Row ยัง Commit ไม่สำเร็จพร้อมกัน*
 
 ## 2. External API: Full Audit Trail (Admin)
 

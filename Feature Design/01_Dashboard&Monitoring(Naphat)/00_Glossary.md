@@ -2,7 +2,7 @@
 
 > **วัตถุประสงค์:** เป็นคำศัพท์กลางสำหรับเอกสาร Feature, Database Schema, Component Diagram, API Contract, UI และ Acceptance Test ของ Dashboard & Monitoring (D&M)
 >
-> **หลักการใช้งาน:** หากคำเดียวกันถูกใช้ต่างความหมายในเอกสารเก่า ให้ใช้ความหมายในไฟล์นี้ร่วมกับมติล่าสุดใน [`01_Desk Research/MVP D&M.md`](01_Desk%20Research/MVP%20D%26M.md)
+> **หลักการใช้งาน:** หากคำเดียวกันถูกใช้ต่างความหมายในเอกสารเก่า ให้ใช้ความหมายในไฟล์นี้ร่วมกับมติล่าสุดใน [`P2_Operational_Monitoring/MVP D&M.md`](P2_Operational_Monitoring/MVP%20D%26M.md)
 >
 > **ข้อจำกัด:** ไฟล์นี้กำหนดความหมายเชิงแนวคิด ยังไม่กำหนดชื่อตาราง ชื่อ Column หรือค่า Enum ฉบับ Physical Database
 

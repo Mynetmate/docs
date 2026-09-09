@@ -4,33 +4,33 @@
 
 2. สิ่งที่ถูกต้อง พร้อมหลักฐานไฟล์
     - Scope P1 จำกัดเป็น Audit Trail แบบ append-only, centralized storage, Admin full read; ตัด SIEM, alerting, WORM และ advanced export ออกชัดเจน จึงไม่ขยายเป็น SIEM  
-        [01_MVP - Audit Trail.md](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/11_Audit Trail(Naphat\)/01_MVP - Audit Trail.md)  
-        [MyNetMate Weight Feature List.md (line 354)](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/MyNetMate Weight Feature List.md:354)
+        [01_MVP - Audit Trail.md](<../01_MVP - Audit Trail.md>)  
+        [MyNetMate Weight Feature List (AI คิด).md](<../../MyNetMate Weight Feature List (AI คิด).md>)
         
     - ใช้ `audit_logs` ตารางเดียวตาม Central Schema และ Audit Trail ระบุห้ามสร้าง schema แข่งขัน  
-        [Data Information.md (line 503)](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/02_Device Inventory Management/Data Information.md:503)  
-        [02_Data Ownership and Event Catalog.md](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/11_Audit Trail(Naphat\)/02_Data Ownership and Event Catalog.md)
+        [Data Information 27-06-69.md](<../../Data Information 27-06-69.md>)  
+        [02_Data Ownership and Event Catalog.md](<../02_Data Ownership and Event Catalog.md>)
         
     - `user_id` และ `resource_id` เป็น nullable; Auth กำหนด failed login ที่ไม่พบบัญชีให้ actor/resource เป็น `null` และ failed login ของบัญชีที่มีจริงให้ actor เป็น `null`, resource เป็นบัญชีเป้าหมาย  
-        [Data Information.md (line 509)](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/02_Device Inventory Management/Data Information.md:509)  
-        [03_Component Diagram.md](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/00_Authentication(Naphat\)/03_Component Diagram.md)
+        [Data Information 27-06-69.md](<../../Data Information 27-06-69.md>)  
+        [Authentication — 03_Component Diagram.md](<../../00_Authentication(Naphat)/03_Component Diagram.md>)
         
     - `result` ถูกจำกัดเป็น `success`/`failure`; `safe_error_category` ถูกอธิบายว่าเป็นหมวดความผิดพลาดที่ปลอดภัย และ Auth map `login_failed` เป็น `authentication_error`, `permission_denied` เป็น `authorization_error`  
-        [Data Information.md (line 513)](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/02_Device Inventory Management/Data Information.md:513)  
-        [03_Component Diagram.md](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/00_Authentication(Naphat\)/03_Component Diagram.md)
+        [Data Information 27-06-69.md](<../../Data Information 27-06-69.md>)  
+        [Authentication — 03_Component Diagram.md](<../../00_Authentication(Naphat)/03_Component Diagram.md>)
         
     - กำหนด transaction boundary ไว้ชัด: producer ใช้ DB session เดียวกับ business action; มี acceptance test สำหรับ device rollback และ Auth มี test สำหรับ password-change rollback  
-        [04_API Contracts.md](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/11_Audit Trail(Naphat\)/04_API Contracts.md)  
-        [05_Acceptance Tests.md](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/11_Audit Trail(Naphat\)/05_Acceptance Tests.md)  
-        [05_Acceptance Tests.md](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/00_Authentication(Naphat\)/05_Acceptance Tests.md)
+        [Audit — 04_API Contracts.md](<../04_API Contracts.md>)  
+        [Audit — 05_Acceptance Tests.md](<../05_Acceptance Tests.md>)  
+        [Authentication — 05_Acceptance Tests.md](<../../00_Authentication(Naphat)/05_Acceptance Tests.md>)
         
     - ไม่มี Audit API สำหรับแก้ไขหรือลบ และ Full Audit จำกัด `audit.read` สำหรับ Admin  
-        [01_MVP - Audit Trail.md](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/11_Audit Trail(Naphat\)/01_MVP - Audit Trail.md)  
-        [06_Permission Catalog.md](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/00_Authentication(Naphat\)/06_Permission Catalog.md)
+        [01_MVP - Audit Trail.md](<../01_MVP - Audit Trail.md>)  
+        [Authentication — 06_Permission Catalog.md](<../../00_Authentication(Naphat)/06_Permission Catalog.md>)
         
     - D&M Recent Activity ถูกกำหนดให้ใช้ positive allowlist 5 actions, cursor pagination (`created_at DESC, id DESC`) และ redaction/`Unknown` สำหรับ actor ที่ไม่ทราบตัวตน  
-        [04_API Contracts.md](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/01_Dashboard&Monitoring(Naphat\)/04_API Contracts.md)  
-        [06_Permission Catalog.md](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/00_Authentication(Naphat\)/06_Permission Catalog.md)
+        [Dashboard — 04_API Contracts.md](<../../01_Dashboard&Monitoring(Naphat)/P1_Core/04_API Contracts.md>)  
+        [Authentication — 06_Permission Catalog.md](<../../00_Authentication(Naphat)/06_Permission Catalog.md>)
         
 3. Blocker หรือ concern
 
@@ -42,12 +42,12 @@
     - Auth contract ส่ง `actor_user_id`, `occurred_at`, ไม่มี `ip_address`/`description` ในตัวอย่าง, pagination แบบ `page`.
     
     ทั้งสองระบุ endpoint เดียวกันคือ `GET /api/audit-logs` จึง implement ตามทั้งคู่ไม่ได้  
-    [04_API Contracts.md](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/11_Audit Trail(Naphat\)/04_API Contracts.md)  
-    [04_API Contracts.md](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/00_Authentication(Naphat\)/04_API Contracts.md)
+    [Audit — 04_API Contracts.md](<../04_API Contracts.md>)  
+    [Authentication — 04_API Contracts.md](<../../00_Authentication(Naphat)/04_API Contracts.md>)
     
 - Event catalog มี `user.deleted` แต่ Auth P1 ระบุให้ “Deactivate/Disable” และไม่ได้รองรับ user deletion. นอกจากนี้ catalog บอกว่า action เป็น `resource_type.action` แต่ `user.login_success` มีสามส่วนและใน Auth ใช้ `resource_type=auth` ไม่ใช่ `user`  
-    [02_Data Ownership and Event Catalog.md](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/11_Audit Trail(Naphat\)/02_Data Ownership and Event Catalog.md)  
-    [01_MVP - Authentication & RBAC.md](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/00_Authentication(Naphat\)/01_MVP - Authentication & RBAC.md)
+    [Audit — 02_Data Ownership and Event Catalog.md](<../02_Data Ownership and Event Catalog.md>)  
+    [Authentication — 01_MVP - Authentication & RBAC.md](<../../00_Authentication(Naphat)/01_MVP - Authentication & RBAC.md>)
     
 - `record_audit_event()` รับ action เป็น string อิสระ แต่มี registry validation เฉพาะ `record_auth_event()` ของ Auth; ยังไม่มี global owner/validation ที่บังคับ canonical action, resource type และ safe-error category สำหรับ producer อื่น
     
@@ -62,7 +62,7 @@
 **P2**
 
 - `config.deploy` ถูกระบุใน catalog เป็น P2 สอดคล้องกับ scope โดยรวม; ไม่ควร implement producer นี้ใน P1  
-    [02_Data Ownership and Event Catalog.md](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/11_Audit Trail(Naphat\)/02_Data Ownership and Event Catalog.md)
+    [02_Data Ownership and Event Catalog.md](<../02_Data Ownership and Event Catalog.md>)
 
 4. Contract delta ที่ต้องให้ owner อื่นยืนยัน
     - **Auth + Audit owner:** เลือก DTO เดียวสำหรับ `GET /api/audit-logs`: ชื่อ field, การมี/ไม่มี IP และ description, และ pagination เพียงแบบเดียว
@@ -239,7 +239,7 @@ Edited 02_Data%20Ownership%20and%20Event%20Catalog.md
 
 - Global Action Registry ต้องครอบคลุมทุก P1 producer ไม่ใช่เฉพาะ Auth: Device, Config Generate, CIS, Settings ด้วย และระบุ `config.deploy` ว่า P2 ชัดเจน
 - กฎ failure ต้องไม่เขียนคลุมเครือว่า “มีหรือไม่มีตาม allowlist” แต่ registry ต้องกำหนดราย action ไปเลยว่า `safe_error_category` เป็นค่าใดหรือเป็น `null` ได้ เช่น `auth.permission_denied → authorization_error`; ส่วน failure ที่ไม่มี category ต้องระบุ action ที่อนุญาตไว้ชัดเจน
-- ต้องแก้หรือให้ Auth owner ยืนยันแก้ [Authentication API Contract](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/00_Authentication(Naphat\)/04_API Contracts.md) จริง เพราะการแก้เฉพาะเอกสาร Audit แล้ว endpoint เดียวกันยังระบุ pagination/fields คนละแบบอยู่ ความขัดแย้งจะยังไม่หาย
+- ต้องแก้หรือให้ Auth owner ยืนยันแก้ [Authentication API Contract](<../../00_Authentication(Naphat)/04_API Contracts.md>) จริง เพราะการแก้เฉพาะเอกสาร Audit แล้ว endpoint เดียวกันยังระบุ pagination/fields คนละแบบอยู่ ความขัดแย้งจะยังไม่หาย
 
 แนะนำเพิ่ม Acceptance Test อีกหนึ่งกรณี: D&M ต้องพิสูจน์ว่า query เหตุการณ์นอก positive allowlist จะไม่ออกสู่ UI, cursor ไม่ซ้ำ/ไม่ข้าม, และตัด `ip_address`/`description` แม้ผู้เรียกเป็น Admin
 

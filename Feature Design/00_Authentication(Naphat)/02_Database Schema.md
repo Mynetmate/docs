@@ -1,5 +1,5 @@
 > [!IMPORTANT]
-> **APPROVED & RECONCILED SCHEMA (อัปเดต 2026-08-27):** Authentication และ Central Schema (`Data Information.md`) ใช้ Database-backed Opaque Server-side Session ตรงกันแล้ว โดย `auth_sessions` ต้องมี `session_token_hash` และห้ามใช้ Internal UUID เป็น Cookie Token
+> **APPROVED & RECONCILED SCHEMA (อัปเดต 2026-08-27):** Authentication และ Central Schema (`../Data Information 27-06-69.md`) ใช้ Database-backed Opaque Server-side Session ตรงกันแล้ว โดย `auth_sessions` ต้องมี `session_token_hash` และห้ามใช้ Internal UUID เป็น Cookie Token
 
 # Authentication Database Schema
 
@@ -35,7 +35,7 @@ CREATE TABLE users (
 - `last_login_at` ถูก **ตัดออก** เนื่องจากสามารถ Query จาก `auth_sessions.created_at` ได้โดยตรง
 - `must_change_password` ถูก **ตัดออก** ในระยะ P1 เนื่องจากไม่มีฟีเจอร์ Admin Reset Password
 
-## 2. Table: `auth_sessions` (Table ที่ 12 ของระบบ)
+## 2. Table: `auth_sessions` (Central Schema หมายเลข 1.1; หนึ่งใน 12 ตารางของระบบ)
 ตารางนี้เป็น Source of Truth ของ Server-side Session ใน P1 รองรับการตรวจ Session, Logout, Expiry, Revoke และการบังคับใช้การเปลี่ยนสิทธิ์ทันที
 
 ```sql
@@ -66,5 +66,5 @@ CREATE INDEX idx_auth_sessions_active_user
 - Cookie เก็บ Token ดิบเพียงที่ Browser ส่วน Database เก็บเฉพาะ `SHA-256(token)` แบบ Lowercase Hex จำนวน 64 ตัวอักษรใน `session_token_hash`
 - ห้ามบันทึก Token ดิบ, Cookie Header หรือ Token Hash ลง Application Log/Audit Log และห้ามส่ง Token ใน Response JSON
 - `expires_at` ใน Database เป็นแหล่งตัดสินวันหมดอายุหลัก แม้ Browser ยังส่ง Cookie เก่ามา Backend ต้องตอบ `401 AUTH_SESSION_INVALID`
-- `ip_address` และ `user_agent` ใช้เพื่อ Audit/ตรวจความผิดปกติเท่านั้น ห้ามใช้ผูก Session แบบตายตัว เพราะค่าอาจเปลี่ยนจาก DHCP, Proxy หรือ Browser Update
+- `ip_address` และ `user_agent` ใช้วิเคราะห์ Session ภายใน Auth เท่านั้น ห้ามใช้ผูก Session แบบตายตัวและห้ามคัดลอกเข้า `record_auth_event()`/`audit_logs` เพราะค่าอาจเปลี่ยนจาก DHCP, Proxy หรือ Browser Update และ `audit_logs` P1 ไม่เก็บ Client IP
 - Job Cleanup สามารถลบ Session ที่หมดอายุหรือถูก Revoke แล้วตาม Retention Policy ได้ แต่การตรวจสิทธิ์ห้ามพึ่งพาว่า Cleanup รันสำเร็จ

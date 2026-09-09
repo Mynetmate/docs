@@ -93,11 +93,11 @@ MVP ยังไม่ต้องมี:
 
 เอกสารที่เกี่ยวข้อง:
 
-- [คำอธิบายคำศัพท์ NTV.md](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/03_Network Topology Visualization(Naphat)/คำอธิบายคำศัพท์ NTV.md) — คำอธิบายศัพท์ด้วยภาษาไทย
-- [02_Database Schema.md](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/03_Network Topology Visualization(Naphat)/02_Database Schema.md) — เอกสารถัดไปสำหรับออกแบบข้อมูล
-- [03_Component Diagram.md](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/03_Network Topology Visualization(Naphat)/03_Component Diagram.md) — เอกสารถัดไปสำหรับแบ่งส่วนประกอบระบบ
-- [04_NTV - API.md](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/03_Network Topology Visualization(Naphat)/04_NTV - API.md) — Candidate API
-- [05_Acceptance Tests.md](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/03_Network Topology Visualization(Naphat)/05_Acceptance Tests.md) — เกณฑ์ทดสอบปัจจุบัน
+- [คำอธิบายคำศัพท์ NTV.md](<คำอธิบายคำศัพท์ NTV.md>) — คำอธิบายศัพท์ด้วยภาษาไทย
+- [02_Database Schema.md](<02_Database Schema.md>) — เอกสารถัดไปสำหรับออกแบบข้อมูล
+- [03_Component Diagram.md](<03_Component Diagram.md>) — เอกสารถัดไปสำหรับแบ่งส่วนประกอบระบบ
+- [04_NTV - API.md](<04_NTV - API.md>) — Candidate API
+- [05_Acceptance Tests.md](<05_Acceptance Tests.md>) — เกณฑ์ทดสอบปัจจุบัน
 
 > [!IMPORTANT]
 > เอกสารฉบับนี้เก็บเฉพาะมติล่าสุด: NTV MVP เป็น **Visualization-only, Observation-first Topology** ข้อมูล Device, Interface และ Link ต้องสืบกลับไปยังการเก็บข้อมูลจากอุปกรณ์เป้าหมายใน Isolated Lab ได้ ไม่ใช้แนวทาง `Manual-first`, ไม่ใช่ Freehand Network Diagram และไม่มี Manual Override/Verification Workflow ใน MVP โดย LLDP Link แสดงอัตโนมัติตามระดับหลักฐาน ไม่ต้องให้ผู้ใช้ Confirm/Reject ทุกเส้น
@@ -257,19 +257,19 @@ Gemini หรือ AI อาจช่วยอธิบายข้อมูล
 ใน MVP การดำเนินการต้องเริ่มจากผู้ใช้ที่มีสิทธิ์ และ Backend ต้องตรวจ RBAC พร้อมบันทึก Audit Trail
 ### 2.1 Documentation Alignment Status
 
-- **Resolved — Manual Device Enrollment:** [Device Inventory.md](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/02_Device Inventory Management/Device Inventory.md) ระบุแล้วว่าผู้ใช้ให้ Management IP และ Credential Profile จากนั้นระบบต้องเก็บข้อมูลแบบ Read-only ก่อนเป็น Managed Device
-- **Resolved — Feature SSOT:** [MyNetMate Weight Feature List.md](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/MyNetMate Weight Feature List.md) แยก Ping เป็น Reachability, Collection เป็นเกณฑ์ยืนยัน Managed Device และระบุแล้วว่า MVP ไม่ทำ Freehand/Manual Link ส่วน Evidence-based Manual Override เป็น Future Enhancement
-- **Resolved — Interface/Link Ownership:** [Data Information.md](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/02_Device Inventory Management/Data Information.md) ให้ `interfaces` เก็บเฉพาะข้อมูลประจำ Port ส่วน Observation, Current Link และ Layout แยกออกจาก Interface; Override/Review Schema เป็น Future Extension
+- **Resolved — Manual Device Enrollment:** [Device Inventory.md](<../02_Device Inventory Management(Tee)/Device Inventory.md>) ระบุแล้วว่าผู้ใช้ให้ Management IP และ Credential Profile จากนั้นระบบต้องเก็บข้อมูลแบบ Read-only ก่อนเป็น Managed Device
+- **Resolved — Feature SSOT:** [MyNetMate Weight Feature List (AI คิด).md](<../MyNetMate Weight Feature List (AI คิด).md>) แยก Ping เป็น Reachability, Collection เป็นเกณฑ์ยืนยัน Managed Device และระบุแล้วว่า MVP ไม่ทำ Freehand/Manual Link ส่วน Evidence-based Manual Override เป็น Future Enhancement
+- **Resolved — Interface/Link Ownership:** [Data Information 27-06-69.md](<../Data Information 27-06-69.md>) ให้ `interfaces` เก็บเฉพาะข้อมูลประจำ Port ส่วน Observation, Current Link และ Layout แยกออกจาก Interface; Override/Review Schema เป็น Future Extension
 
 ### 2.2 Evidence Sources
 
 | Evidence ID | หลักฐาน                                                                                                | แหล่งข้อมูล                                                                                                                                                         | ผลที่นำมาใช้                                                               |
 | ----------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
 | `E-NTV-01`  | ผู้ใช้ยืนยันความหมาย Manual Input และเงื่อนไขว่าทั้ง Manual/Discovery ต้องเก็บข้อมูลจากอุปกรณ์เป้าหมาย | User Decision วันที่ 2026-08-11                                                                                                                                     | เป็นฐานของ `D-NTV-01` และ `D-NTV-02`                                       |
-| `E-NTV-02`  | Topology ถูกจัดไว้ P2 เพราะพึ่งข้อมูล LLDP จาก Discovery                                           | [MyNetMate Weight Feature List.md](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/MyNetMate Weight Feature List.md)                                    | NTV ต้องรับข้อมูลจาก Collection/Discovery ไม่เป็น Canvas เปล่า             |
-| `E-NTV-03`  | อาจารย์ต้องการ Interactive Topology, Drag & Drop และระบุ Port Connection                               | [คำแนะนำของอาจารย์ครั้งที่ 2](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/04_project_management/Advisor Teacher/คำแนะนำของอาจารย์ ณ ครั้งที่ 2 ปี 3 เทอม 1.md) | MVP รองรับ Layout Editing และแสดง Port Connection จาก Observation; Manual Connection รอ Future Scope |
-| `E-NTV-04`  | มี Huawei Router, MikroTik Switch และ Cisco Switch สำหรับทดสอบจริงหลังกลางภาค                          | [AGENTS.md](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/AGENTS.md)                                                                                             | ออกแบบข้อมูลแบบ Vendor-neutral แต่รอรุ่น/OS ก่อนรับรอง Vendor รอง          |
-| `E-NTV-05`  | ห้าม Scan เครือข่ายมหาวิทยาลัยและต้องใช้ Isolated Lab                                                  | [AGENTS.md](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/AGENTS.md)                                                                                             | บังคับ Allowlist, RBAC และ Audit ใน Collection/Discovery                   |
+| `E-NTV-02`  | Topology ถูกจัดไว้ P2 เพราะพึ่งข้อมูล LLDP จาก Discovery                                           | [MyNetMate Weight Feature List (AI คิด).md](<../MyNetMate Weight Feature List (AI คิด).md>) | NTV ต้องรับข้อมูลจาก Collection/Discovery ไม่เป็น Canvas เปล่า             |
+| `E-NTV-03`  | อาจารย์ต้องการ Interactive Topology, Drag & Drop และระบุ Port Connection                               | `คำแนะนำของอาจารย์ ณ ครั้งที่ 2 ปี 3 เทอม 1.md` ใน local Vault | MVP รองรับ Layout Editing และแสดง Port Connection จาก Observation; Manual Connection รอ Future Scope |
+| `E-NTV-04`  | มี Huawei Router, MikroTik Switch และ Cisco Switch สำหรับทดสอบจริงหลังกลางภาค                          | `AGENTS.md` ใน local Vault | ออกแบบข้อมูลแบบ Vendor-neutral แต่รอรุ่น/OS ก่อนรับรอง Vendor รอง          |
+| `E-NTV-05`  | ห้าม Scan เครือข่ายมหาวิทยาลัยและต้องใช้ Isolated Lab                                                  | `AGENTS.md` ใน local Vault | บังคับ Allowlist, RBAC และ Audit ใน Collection/Discovery                   |
 | `E-NTV-06`  | ผู้ใช้ตั้งคำถามเรื่องภาระการ Confirm/Reject และยืนยันให้แก้เป็นการเชื่อระบบตามระดับหลักฐาน | User Decision วันที่ 2026-08-12 | เป็นฐานของ `D-NTV-08`; Link ปกติแสดงอัตโนมัติ |
 | `E-NTV-07`  | ผู้ใช้กำหนดให้ NTV MVP เน้นการแสดง Topology และย้าย Manual Override/Verification ออกไป | User Decision วันที่ 2026-08-12 | เป็นฐานของ `D-NTV-09`; ลด Schema, Component, API และ Acceptance Test ของ MVP |
 
@@ -657,11 +657,11 @@ Performance Target เช่นจำนวน Node/Link สูงสุดแ�
 | `UD-NTV-06` | แสดงกรณีไม่มี Neighbor Data โดยไม่สร้าง Link สมมติ | `BR-NTV-04`, `BR-NTV-12` | `AT-NTV-R11` |
 | `UD-NTV-07` | Layout แยกจาก Network Data | `BR-NTV-07` | `AT-NTV-R05` |
 
-รายละเอียด Test อยู่ใน [05_Acceptance Tests.md](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/03_Network Topology Visualization(Naphat)/05_Acceptance Tests.md)
+รายละเอียด Test อยู่ใน [05_Acceptance Tests.md](<05_Acceptance Tests.md>)
 
 ## 12. ข้อมูลนำเข้าสำหรับออกแบบ Database Schema
 
-หัวข้อนี้ระบุ **Conceptual Data Requirements** เท่านั้น รายละเอียด Table/Field/Index/Constraint ให้ตัดสินใน [02_Database Schema.md](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/03_Network Topology Visualization(Naphat)/02_Database Schema.md)
+หัวข้อนี้ระบุ **Conceptual Data Requirements** เท่านั้น รายละเอียด Table/Field/Index/Constraint ให้ตัดสินใน [02_Database Schema.md](<02_Database Schema.md>)
 
 ### 12.1 Entity ที่ต้องพิจารณา
 
@@ -732,7 +732,7 @@ Performance Target เช่นจำนวน Node/Link สูงสุดแ�
 4. แสดง Unresolved/Conflict/Stale Warning และ Re-collect
 5. Save Node Position โดยไม่แก้ Network Data
 
-Candidate Endpoint ปัจจุบันอยู่ใน [04_NTV - API.md](E:/CEPP Project/หลักศูตร/KMITL_Knowledge/Project/02_feature/03_Network Topology Visualization(Naphat)/04_NTV - API.md)
+Candidate Endpoint ปัจจุบันอยู่ใน [04_NTV - API.md](<04_NTV - API.md>)
 
 ## 14. Open Questions ที่ยังต้องยืนยัน
 

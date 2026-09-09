@@ -2,9 +2,9 @@
 
 > **สถานะเอกสาร:** อยู่ระหว่างการออกแบบตามลำดับ Software Development
 >
-> **มติ Feature ล่าสุด:** [`01_Desk Research/MVP D&M.md`](02_feature/01_Dashboard&Monitoring(Naphat)/01_Desk%20Research/MVP%20D&M.md)
+> **มติ Feature ล่าสุด:** [`MVP D&M.md`](MVP%20D%26M.md)
 >
-> **ขอบเขตโครงการรวม:** [`../MyNetMate Weight Feature List.md`](02_feature/MyNetMate%20Weight%20Feature%20List%20(AI%20คิด).md)
+> **ขอบเขตโครงการรวม:** [`../MyNetMate Weight Feature List.md`](../../MyNetMate%20Weight%20Feature%20List%20(AI%20คิด).md)
 > **กติกาสำคัญ:** ต้องผ่าน Scope, Ownership, Entity, Relationship และ Lifecycle ก่อนออกแบบ Logical Database Schema
 
 ---
@@ -31,11 +31,11 @@ Step นี้ **ยังไม่ตัดสินชื่อตาราง
 
 หากเอกสารขัดกัน ให้ใช้ลำดับต่อไปนี้:
 
-1. [`MVP D&M.md`](02_feature/01_Dashboard&Monitoring(Naphat)/01_Desk%20Research/MVP%20D&M.md) — มติ Feature และขอบเขต D&M ล่าสุด
-2. [`../MyNetMate Weight Feature List.md`](02_feature/MyNetMate%20Weight%20Feature%20List%20(AI%20คิด).md) — Single Source of Truth ของขอบเขตโครงการโดยรวม
-3. [`01_Desk Research/Switch Opeational Visibility.md`](02_feature/01_Dashboard&Monitoring(Naphat)/01_Desk%20Research/Switch%20Opeational%20Visibility.md) และ [`01_Desk Research/Router Operational Visibility.md`](02_feature/01_Dashboard&Monitoring(Naphat)/01_Desk%20Research/Router%20Operational%20Visibility.md) — เหตุผลและหลักฐานเชิง Network Operations
-4. [`MyNetMate Minimal MVP Dashboard & Monitoring Research Plan.md`](MyNetMate%20Minimal%20MVP%20Dashboard%20%26%20Monitoring%20Research%20Plan.md), Schema, Component Diagram และ API Contracts เดิม — Historical Design ที่ยังใช้เป็นหลักฐานได้ แต่ต้องปรับตามมติล่าสุด
-5. [`../02_Device Inventory Management/Data Information.md`](02_feature/02_Device%20Inventory%20Management(Tee)/Data%20Information.md) — แนวคิดข้อมูลร่วมจาก Device Inventory ซึ่งยังต้องยืนยัน Ownership ใหม่
+1. [`MVP D&M.md`](MVP%20D%26M.md) — มติ Feature และขอบเขต D&M ล่าสุด
+2. [`../MyNetMate Weight Feature List.md`](../../MyNetMate%20Weight%20Feature%20List%20(AI%20คิด).md) — Single Source of Truth ของขอบเขตโครงการโดยรวม
+3. [`Switch Opeational Visibility.md`](Switch%20Opeational%20Visibility.md) และ [`Router Operational Visibility.md`](Router%20Operational%20Visibility.md) — เหตุผลและหลักฐานเชิง Network Operations
+4. [`MyNetMate Minimal MVP Dashboard & Monitoring Research Plan.md`](../Archive_Research/MyNetMate%20Minimal%20MVP%20Dashboard%20&%20Monitoring%20Research%20Plan.md), Schema, Component Diagram และ API Contracts เดิม — Historical Design ที่ยังใช้เป็นหลักฐานได้ แต่ต้องปรับตามมติล่าสุด
+5. เอกสาร Schema ปัจจุบันของ Device Inventory — Pending confirmation from Feature Owner (Tee) — แนวคิดข้อมูลร่วมจาก Device Inventory ซึ่งยังต้องยืนยัน Ownership ใหม่
 
 ## 4. Evidence Audit
 
@@ -317,7 +317,7 @@ Feature F-01 ถึง F-14 ได้รับการยืนยันใน�
 
 > **Working Decision:** ในช่วงที่ Schema ของสมาชิกทีมยังไม่ครบ ให้ D&M ออกแบบเฉพาะข้อมูลที่เกิดจาก Workflow ของ D&M เอง ส่วนข้อมูลที่ควรมี Feature อื่นเป็นเจ้าของให้ระบุเป็น Dependency Contract และ `Pending Dependency` แทนการสร้างตารางซ้ำ
 >
-> **คำศัพท์อ้างอิง:** [`00_Glossary.md`](02_feature/01_Dashboard&Monitoring(Naphat)/00_Glossary.md)
+> **คำศัพท์อ้างอิง:** [`00_Glossary.md`](../00_Glossary.md)
 
 ## จุดประสงค์ของ Step 3
 
@@ -338,7 +338,7 @@ Step นี้ยังไม่ออกแบบชื่อตาราง, C
 - เหตุการณ์จำลอง 12 เหตุการณ์และ Feature Coverage Matrix
 - กฎใน `00_Glossary.md` ที่แยก Reachability, Collection, Operational State และ Freshness
 - แนวทาง Ownership ของ NTV ที่แยก Shared Inventory Data, Collection Evidence และ Feature-owned Interpretation
-- `Data Information.md` ซึ่งระบุว่า Device และ Interface เป็นข้อมูลร่วม
+- เอกสาร Schema ปัจจุบันของ Device Inventory — Pending confirmation from Feature Owner (Tee) ซึ่งระบุว่า Device และ Interface เป็นข้อมูลร่วม
 - หลัก Modular Monolith: ใช้ PostgreSQL ร่วมกันได้ แต่แต่ละตารางยังต้องมี Owner และ Migration Dependency ชัดเจน
 
 ## User Decisions ที่ใช้ใน Step นี้
