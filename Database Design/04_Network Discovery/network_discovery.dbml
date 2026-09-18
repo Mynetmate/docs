@@ -1,125 +1,69 @@
-// =============================================================================
-// DBML Schema: 04_Network Discovery (3NF Normalized)
-// Scope: Strictly for Network Discovery (Oxian Engine Output)
-// Reconciled: Uses Unified Master devices table naming (management_ip, chassis_mac)
-// Usage: Copy-paste to https://dbdiagram.io to visualize instantly!
-// =============================================================================
-
-Enum device_status_enum {
-  online
-  offline
-  unreachable
-  maintenance
-}
-
-Enum discovery_method_enum {
-  manual_enrollment
-  auto_discovery
-  csv_import
-}
-
-Enum interface_status_enum {
-  Up
-  Down
-  Testing
-  Unknown
-}
-
-Enum link_protocol_enum {
-  lldp
-  cdp
-  default_route
-  manual
-}
-
-Enum scan_status_enum {
-  pending
-  running
-  completed
-  failed
-}
-
-// -----------------------------------------------------------------------------
-// Core Entity: devices (3NF: Unique Candidate Key = management_ip)
-// -----------------------------------------------------------------------------
-Table devices {
-  id uuid [pk, default: `gen_random_uuid()`]
-  management_ip inet [not null, unique]
-  hostname varchar(255)
-  description text
-  vendor varchar(50) [default: 'Unknown']
-  chassis_mac macaddr
-  chassis_id varchar(100)
-  is_managed boolean [default: true]
-  status device_status_enum [default: 'online']
-  discovery_method discovery_method_enum [default: 'auto_discovery']
-  last_discovered_at timestamptz [default: `now()`]
-  last_seen_at timestamptz [default: `now()`]
-  created_at timestamptz [default: `now()`]
-  updated_at timestamptz [default: `now()`]
-
-  indexes {
-    management_ip [name: 'idx_devices_management_ip']
-    hostname [name: 'idx_devices_hostname']
-    vendor [name: 'idx_devices_vendor']
-  }
-}
-
-// -----------------------------------------------------------------------------
-// Weak Entity: device_interfaces (3NF: Composite AK = device_id + if_index)
-// -----------------------------------------------------------------------------
-Table device_interfaces {
-  id uuid [pk, default: `gen_random_uuid()`]
-  device_id uuid [not null, ref: > devices.id]
-  if_index integer [not null]
-  name varchar(255) [not null]
-  mac_address macaddr
-  admin_status interface_status_enum [default: 'Up']
-  oper_status interface_status_enum [default: 'Up']
-  updated_at timestamptz [default: `now()`]
-
-  indexes {
-    (device_id, if_index) [unique, name: 'uq_device_if_index']
-    device_id [name: 'idx_interfaces_device_id']
-    mac_address [name: 'idx_interfaces_mac']
-  }
-}
-
-// -----------------------------------------------------------------------------
-// Relation: topology_links (3NF: Eliminates transitive device redundancy)
-// -----------------------------------------------------------------------------
-Table topology_links {
-  id uuid [pk, default: `gen_random_uuid()`]
-  source_interface_id uuid [not null, ref: > device_interfaces.id]
-  target_interface_id uuid [ref: > device_interfaces.id]
-  target_device_id uuid [ref: > devices.id]
-  target_hostname_hint varchar(255)
-  target_port_hint varchar(255)
-  protocol link_protocol_enum [default: 'lldp']
-  discovered_at timestamptz [default: `now()`]
-
-  indexes {
-    source_interface_id [name: 'idx_links_source_interface']
-    target_interface_id [name: 'idx_links_target_interface']
-    target_device_id [name: 'idx_links_target_device']
-  }
-}
-
-// -----------------------------------------------------------------------------
-// Audit Entity: discovery_scans (3NF: Execution Metrics)
-// -----------------------------------------------------------------------------
+// Generated design. SQL is authoritative for CHECK, partial indexes and delete policy.
+// Fragment: append to Inventory DBML, or open ../mynetmate.dbml. No duplicate external tables.
 Table discovery_scans {
   id uuid [pk, default: `gen_random_uuid()`]
   seed_ip inet [not null]
-  status scan_status_enum [default: 'completed']
-  devices_count integer [default: 0]
-  links_count integer [default: 0]
-  duration_ms integer
+  credential_profile_id uuid [not null, ref: > credential_profiles.id]
+  status varchar(20) [not null, default: 'queued']
+  timeout_seconds integer [not null, default: 2]
+  max_depth integer [not null]
+  max_devices integer [not null]
+  environment varchar(20) [not null]
+  initiated_by uuid
   error_message text
-  scanned_at timestamptz [default: `now()`]
-
+  requested_at timestamptz [not null, default: `now()`]
+  started_at timestamptz
+  finished_at timestamptz
   indexes {
-    seed_ip [name: 'idx_discovery_scans_seed_ip']
-    scanned_at [name: 'idx_discovery_scans_scanned_at']
+    (requested_at)
   }
 }
+
+Table collection_runs {
+  id uuid [pk, default: `gen_random_uuid()`]
+  discovery_scan_id uuid [ref: > discovery_scans.id]
+  device_id uuid [ref: > devices.id]
+  target_ip inet [not null]
+  credential_profile_id uuid [not null, ref: > credential_profiles.id]
+  purpose varchar(30) [not null]
+  transport varchar(20) [not null]
+  environment varchar(20) [not null]
+  status varchar(20) [not null, default: 'queued']
+  neighbor_status varchar(20) [not null, default: 'not_attempted']
+  initiated_by uuid
+  error_message text
+  requested_at timestamptz [not null, default: `now()`]
+  started_at timestamptz
+  finished_at timestamptz
+  indexes {
+    (id, device_id) [unique]
+    (device_id, requested_at)
+    (discovery_scan_id)
+    (credential_profile_id)
+  }
+}
+
+Table neighbor_observations {
+  id uuid [pk, default: `gen_random_uuid()`]
+  collection_run_id uuid [not null]
+  local_device_id uuid [not null]
+  local_interface_id uuid [not null]
+  observation_key varchar(255) [not null]
+  protocol varchar(10) [not null, default: 'lldp']
+  remote_chassis_id_subtype smallint
+  remote_chassis_id text
+  remote_port_id_subtype smallint
+  remote_port_id text
+  remote_system_name text
+  remote_port_description text
+  remote_management_ip inet
+  observed_at timestamptz [not null]
+  indexes {
+    (collection_run_id, observation_key) [unique]
+    (local_device_id, local_interface_id)
+    (observed_at)
+  }
+}
+
+Ref: neighbor_observations.(collection_run_id, local_device_id) > collection_runs.(id, device_id)
+Ref: neighbor_observations.(local_device_id, local_interface_id) > device_interfaces.(device_id, id)
