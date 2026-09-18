@@ -103,3 +103,71 @@ Table interface_ip_addresses {
     (interface_id, address) [pk]
   }
 }
+
+Table discovery_scans {
+  id uuid [pk, default: `gen_random_uuid()`]
+  seed_ip inet [not null]
+  credential_profile_id uuid [not null, ref: > credential_profiles.id]
+  status varchar(20) [not null, default: 'queued']
+  timeout_seconds integer [not null, default: 2]
+  max_depth integer [not null]
+  max_devices integer [not null]
+  environment varchar(20) [not null]
+  initiated_by uuid
+  error_message text
+  requested_at timestamptz [not null, default: `now()`]
+  started_at timestamptz
+  finished_at timestamptz
+  indexes {
+    (requested_at)
+  }
+}
+
+Table collection_runs {
+  id uuid [pk, default: `gen_random_uuid()`]
+  discovery_scan_id uuid [ref: > discovery_scans.id]
+  device_id uuid [ref: > devices.id]
+  target_ip inet [not null]
+  credential_profile_id uuid [not null, ref: > credential_profiles.id]
+  purpose varchar(30) [not null]
+  transport varchar(20) [not null]
+  environment varchar(20) [not null]
+  status varchar(20) [not null, default: 'queued']
+  neighbor_status varchar(20) [not null, default: 'not_attempted']
+  initiated_by uuid
+  error_message text
+  requested_at timestamptz [not null, default: `now()`]
+  started_at timestamptz
+  finished_at timestamptz
+  indexes {
+    (id, device_id) [unique]
+    (device_id, requested_at)
+    (discovery_scan_id)
+    (credential_profile_id)
+  }
+}
+
+Table neighbor_observations {
+  id uuid [pk, default: `gen_random_uuid()`]
+  collection_run_id uuid [not null]
+  local_device_id uuid [not null]
+  local_interface_id uuid [not null]
+  observation_key varchar(255) [not null]
+  protocol varchar(10) [not null, default: 'lldp']
+  remote_chassis_id_subtype smallint
+  remote_chassis_id text
+  remote_port_id_subtype smallint
+  remote_port_id text
+  remote_system_name text
+  remote_port_description text
+  remote_management_ip inet
+  observed_at timestamptz [not null]
+  indexes {
+    (collection_run_id, observation_key) [unique]
+    (local_device_id, local_interface_id)
+    (observed_at)
+  }
+}
+
+Ref: neighbor_observations.(collection_run_id, local_device_id) > collection_runs.(id, device_id)
+Ref: neighbor_observations.(local_device_id, local_interface_id) > device_interfaces.(device_id, id)
