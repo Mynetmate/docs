@@ -3,7 +3,6 @@ CREATE TABLE devices (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     management_ip inet NOT NULL UNIQUE CHECK (masklen(management_ip) IN (32, 128)),
     hostname varchar(255),
-    system_description text,
     device_type varchar(20) NOT NULL DEFAULT 'unknown' CHECK (device_type IN ('router','switch','firewall','access_point','server','other','unknown')),
     role varchar(30) CHECK (role IN ('core','distribution','access','edge_router','management','other')),
     vendor varchar(50),

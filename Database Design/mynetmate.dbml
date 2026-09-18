@@ -36,7 +36,6 @@ Table devices {
   id uuid [pk, default: `gen_random_uuid()`]
   management_ip inet [not null, unique]
   hostname varchar(255)
-  system_description text
   device_type varchar(20) [not null, default: 'unknown']
   role varchar(30)
   vendor varchar(50)

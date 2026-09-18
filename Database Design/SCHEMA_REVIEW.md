@@ -11,7 +11,6 @@
 | is_managed + enrollment_status | Device เฉพาะที่ยืนยัน; management_state | Pending/failed อยู่ runs; unmanaged เก่าต้องแยกตรวจ |
 | status | reachability + management_state | Timeout ไม่พิสูจน์ offline; maintenance เป็นนโยบาย |
 | device_enrollment_attempts | collection_runs + purpose | ใช้ประวัติการเก็บข้อมูลร่วมกัน; collected_* snapshot เก่าต้อง archive |
-| description + notes | system_description + notes | เครื่องรายงานกับคนเขียน; แยกข้อความเดิมตามที่มาจริง |
 | chassis_mac + chassis_id | chassis_id + subtype | ถ้า chassis_mac เก่าเป็น base MAC คนละความหมายต้อง archive ไม่เดาว่าเป็น LLDP |
 | discovery_method | enrollment_source | ทางเข้าครั้งแรก ไม่ใช่การตรวจล่าสุด |
 | last_discovered_at | query collection_runs | ลด cache ที่ซ้ำกับผลเก็บข้อมูล |

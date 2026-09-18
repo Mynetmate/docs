@@ -19,7 +19,6 @@ Device อาจยังไม่มี Interface ที่อ่านสำ�
 - ใช้ id เชื่อมข้าม feature ไม่ใช้ IP/hostname เป็น FK เพราะเปลี่ยนได้
 - management_ip unique ภายใน lab เดียว; ยังไม่รองรับ IP ซ้ำข้าม VRF/tenant
 - hostname/vendor เป็น NULL ได้เมื่อ Collector ไม่คืนค่า ห้ามแต่งข้อมูลขึ้นเอง
-- system_description มาจากเครื่อง ส่วน notes ผู้ใช้เขียน
 - device_type คือชนิด; role คือหน้าที่; vendor คือผู้ผลิต; platform คือชื่อ driver จึงไม่ซ้ำกัน
 - management_state: active / maintenance / retired เป็นนโยบายผู้ใช้
 - reachability: unknown / reachable / unreachable เป็นผลตรวจ ไม่ตีความ timeout ว่าเครื่องปิด

@@ -44,7 +44,6 @@ table(INV, '02_sites_and_groups.sql', 'device_groups', [
 table(INV, '03_devices.sql', 'devices', [
     ID, ('management_ip', 'inet', 'NOT NULL UNIQUE CHECK (masklen(management_ip) IN (32, 128))'),
     ('hostname', 'varchar(255)', ''),
-    ('system_description', 'text', ''),
     ('device_type', 'varchar(20)', "NOT NULL DEFAULT 'unknown' CHECK (device_type IN ('router','switch','firewall','access_point','server','other','unknown'))"),
     ('role', 'varchar(30)', "CHECK (role IN ('core','distribution','access','edge_router','management','other'))"),
     ('vendor', 'varchar(50)', ''), ('model', 'varchar(100)', ''),
