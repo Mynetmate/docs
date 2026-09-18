@@ -1,4 +1,14 @@
 // Generated design. SQL is authoritative for CHECK, partial indexes and delete policy.
+Enum device_type_enum {
+  router
+  switch
+  firewall
+  access_point
+  server
+  other
+  unknown
+}
+
 Table credential_profiles {
   id uuid [pk, default: `gen_random_uuid()`]
   name varchar(100) [not null, unique]
@@ -36,7 +46,7 @@ Table devices {
   id uuid [pk, default: `gen_random_uuid()`]
   management_ip inet [not null, unique]
   hostname varchar(255)
-  device_type varchar(20) [not null, default: 'unknown']
+  device_type device_type_enum [not null, default: 'unknown']
   role varchar(30)
   vendor varchar(50)
   model varchar(100)

@@ -19,6 +19,7 @@ def table(module, filename, name, columns, constraints=(), indexes=()):
 ID = ('id', 'uuid', 'PRIMARY KEY DEFAULT gen_random_uuid()')
 CREATED = ('created_at', 'timestamptz', 'NOT NULL DEFAULT now()')
 UPDATED = ('updated_at', 'timestamptz', 'NOT NULL DEFAULT now()')
+DEVICE_TYPE_VALUES = ('router', 'switch', 'firewall', 'access_point', 'server', 'other', 'unknown')
 
 table(INV, '01_credentials.sql', 'credential_profiles', [
     ID, ('name', 'varchar(100)', 'NOT NULL UNIQUE'),
@@ -174,7 +175,8 @@ def render_dbml(rows):
             if default:
                 value = default[1]
                 attrs.append('default: ' + (f'`{value}`' if '(' in value else value))
-            result.append(f'  {col} {typ}' + (' [' + ', '.join(attrs) + ']' if attrs else ''))
+            dbml_type = 'device_type_enum' if col == 'device_type' else typ
+            result.append(f'  {col} {dbml_type}' + (' [' + ', '.join(attrs) + ']' if attrs else ''))
         idx = []
         for constraint in constraints:
             key = re.fullmatch(r'(PRIMARY KEY|UNIQUE) \(([^)]+)\)', constraint)
@@ -189,6 +191,10 @@ def render_dbml(rows):
             if ref:
                 result.append(f'Ref: {name}.({ref[1]}) > {ref[2]}.({ref[3]})')
     return '\n'.join(result).rstrip() + '\n'
+
+
+def render_dbml_enums():
+    return 'Enum device_type_enum {\n' + ''.join(f'  {value}\n' for value in DEVICE_TYPE_VALUES) + '}\n\n'
 
 
 def main():
@@ -220,9 +226,9 @@ CREATE UNIQUE INDEX uq_interface_current_name ON device_interfaces(device_id, na
         combined = '\n'.join((module / 'sql' / f'{f}.sql').read_text(encoding='utf-8') for f in order)
         (module / filename).write_text(combined, encoding='utf-8')
     dbml_header = '// Generated design. SQL is authoritative for CHECK, partial indexes and delete policy.\n'
-    (INV / 'device_inventory.dbml').write_text(dbml_header + render_dbml([t for t in TABLES if t[0] == INV]), encoding='utf-8')
+    (INV / 'device_inventory.dbml').write_text(dbml_header + render_dbml_enums() + render_dbml([t for t in TABLES if t[0] == INV]), encoding='utf-8')
     (DISC / 'network_discovery.dbml').write_text(dbml_header + '// Fragment: append to Inventory DBML, or open ../mynetmate.dbml. No duplicate external tables.\n' + render_dbml([t for t in TABLES if t[0] == DISC]), encoding='utf-8')
-    (ROOT / 'mynetmate.dbml').write_text(dbml_header + render_dbml(TABLES), encoding='utf-8')
+    (ROOT / 'mynetmate.dbml').write_text(dbml_header + render_dbml_enums() + render_dbml(TABLES), encoding='utf-8')
 
 
 if __name__ == '__main__':
