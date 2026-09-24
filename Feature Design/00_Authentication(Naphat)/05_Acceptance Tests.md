@@ -51,14 +51,18 @@
    - `Viewer` ไม่สามารถสร้าง/แก้ไข Device, CIS, Settings (ตามที่ระบุใน Permission Catalog)
    - `Operator` ไม่สามารถดึง Secret ดิบออกจาก Credential Profile ได้ (ระบบ API ห้ามคืนค่า Plaintext กลับมาเด็ดขาด)
 10. **Rate Limiting:**
-    - ระบบอนุญาตให้พยายาม Login ล้มเหลวได้สูงสุด 5 ครั้งต่อ **Client IP** ภายใน 15 นาที หากกระทำ**ครั้งที่ 6** ระบบต้องปฏิเสธคำขอจาก Client IP นั้นทันที (ตอบ `429 AUTH_LOGIN_RATE_LIMITED`)
-    - ครั้งที่ 6 ต้องถูกปฏิเสธก่อน User Query และ Argon2id Verify โดย Test Double ต้องยืนยันว่า Password Verifier ไม่ถูกเรียก
-    - P1 ต้องใช้ Bounded In-memory Sliding-window TTL Store ค่าเริ่มต้นสูงสุด 10,000 Keys และรัน FastAPI หนึ่ง Process/Worker; Restart แล้ว Counter หายเป็นข้อจำกัดที่ยอมรับและต้องมีคำอธิบายใน Deployment Configuration
-    - ระบบจะนับ Identifier (Username/Email) ควบคู่ด้วยโดย Normalize แล้วแปลงเป็น HMAC ด้วย `AUTH_RATE_LIMIT_HMAC_KEY` ก่อนเก็บชั่วคราว การตรวจ State/Key ของ Rate-limit Store, Application Log และ Audit Log ต้องไม่พบ Raw Identifier และ P1 ห้ามใช้ Counter นี้ทำ Account Lockout
-    - หาก `AUTH_RATE_LIMIT_HMAC_KEY` ไม่มีค่า หรือมีความยาวน้อยกว่า 32 bytes Application Startup ต้อง Fail Closed ก่อนเปิดรับ Request
-    - การตรวจและเพิ่ม Counter ต้อง Atomic ภายใน Process; Concurrent Failed Attempts ต้องไม่ทำให้จำนวนครั้งสูญหายหรือปล่อย Request เกิน Threshold
+    - **Sequential:** ระบบอนุญาตให้ Login ล้มเหลวได้สูงสุด 5 ครั้งต่อ Canonical Client IP ภายใน 15 นาที เมื่อมี Failure ครบ 5 รายการแล้ว Request ถัดไปต้องตอบ `429 AUTH_LOGIN_RATE_LIMITED` ก่อน User Query และ Argon2id โดย Test Double ต้องยืนยันว่า Password Verifier ไม่ถูกเรียก
+    - **Concurrent Reservation:** การตรวจ Expiry/Capacity และจองสิทธิ์ต้อง Atomic เมื่อ `Failures ที่ยังอยู่ใน Window + In-flight Attempts >= 5` Request ใหม่ต้องถูกปฏิเสธด้วย `429` แม้ In-flight Attempts ยังไม่ทราบผล การจองไม่ถือเป็น Failure จนกว่าจะทราบผลล้มเหลว
+    - **Mixed State:** เมื่อมี 3 Failures และ 2 In-flight Attempts สำหรับ IP เดียวกัน Request ใหม่ต้องเริ่มไม่ได้ เมื่อ Attempt สำเร็จและคืน Reservation แล้ว Request ใหม่ต้องมีโอกาสผ่านทันทีตามสิทธิ์ที่เหลือ ดังนั้น `429` จาก In-flight Capacity ไม่ได้หมายความว่าต้องรอ 15 นาทีเต็มทุกกรณี
+    - **Explicit Lifecycle:** ไม่พบบัญชี, Password ผิด หรือบัญชี Inactive ต้องเปลี่ยน Reservation เป็น Failure แบบ Atomic หนึ่งครั้ง ส่วน Login สำเร็จต้องคืน Reservation โดยไม่ล้าง Failure เก่า หากทราบผลล้มเหลวแล้ว Audit/System ขั้นถัดไปล้มเหลวต้องคง Failure เดิมโดยไม่เพิ่มซ้ำหรือย้อนคืน
+    - **Cancellation/System Error:** Error หรือ Cancel ก่อนทราบผลตรวจต้องคืน Reservation ต่อเมื่องานตรวจที่เริ่มแล้วหยุดจริงและไม่เพิ่ม Credential Failure; Cancel หลังทราบผลล้มเหลวต้องคง Failure ไว้ Cleanup ซ้ำต้องไม่เพิ่มหรือลด Counter ซ้ำ และต้องส่งต่อ `CancelledError` หลัง Cleanup โดยไม่กลืน Cancellation
+    - **Lock Boundary:** Limiter ทำงานบน Event Loop เดียวและใช้ `asyncio.Lock` เฉพาะ State Transition ห้ามถือ Lock ระหว่าง User Query, Argon2id, Audit หรืองาน I/O หาก Argon2id ใน Thread ยังทำงานอยู่ การ Cancel Coroutine ที่รอผลต้องไม่คืน Reservation ก่อนงานจริงจบ
+    - **IP-only Store:** Rate Limiter ต้องไม่รับหรือเก็บ Username, Email, Raw Identifier, HMAC Digest หรือ Identifier Counter การเปลี่ยน Identifier บน IP เดิมต้องไม่สร้าง Bucket ใหม่ และกฎห้าม Raw Failed-login Identifier ปรากฏใน Application/Audit Log ยังคงมีผล
+    - **Bounded Capacity:** P1 ใช้ Bounded In-memory Sliding-window TTL Store สูงสุด 10,000 Canonical Client IP Keys แต่ละ IP เก็บ Failure Timestamp ที่ยังมีผลสูงสุด 5 รายการและ In-flight Count แบบมีขอบเขต โดยรัน FastAPI หนึ่ง Process/Worker; Restart แล้ว Counter หายเป็นข้อจำกัดที่ต้องอธิบายใน Deployment Configuration
+    - **Store Full:** เมื่อ Store เต็มต้อง Prune Key ที่หมดอายุและไม่มี In-flight Attempt ให้ครบก่อน หากยังเต็มด้วย Active IP Keys ต้องปฏิเสธ IP Key ใหม่ด้วย `503 AUTH_SERVICE_UNAVAILABLE`, ไม่ใช้ `429`, ไม่สร้าง Partial State และไม่ Evict Failure ที่ยังมีผล เมื่อพื้นที่ว่างจึงต้องรับ IP Key ใหม่ได้
+    - **Window Semantics:** Login สำเร็จและ Request ที่ถูก Rate-limit ต้องไม่ล้าง Failure เก่าหรือต่ออายุ Window Failure Timestamp ใช้เวลาที่ทราบผลล้มเหลว และรายการต้องหมดอายุทันทีเมื่อ `age >= 900` วินาที Tests ต้องใช้ Injected/Fake Clock และ Test Event ห้ามใช้ Sleep จริง
+    - **IP Canonicalization:** IPv4/IPv6 ที่ Parse ไม่ได้หรือ Client IP หายต้องตอบ `503 AUTH_SERVICE_UNAVAILABLE` โดยไม่เรียก User Query/Verifier และห้ามใช้ Bucket `unknown`; IPv4-mapped IPv6 ต้อง Normalize เป็น IPv4 เพื่อไม่ให้ Client เดียวสร้างสอง Bucket
     - เมื่อไม่เปิด Trusted Proxy ให้ Client ส่ง `X-Forwarded-For` ปลอมแล้วค่าที่ใช้ Rate Limit ต้องยังเป็น Peer IP; เมื่อเปิด Proxy Header Processing ต้องยอมรับ Header เฉพาะ Connection จาก Trusted Proxy Allowlist และห้ามใช้ Wildcard Trust
-    - ระบบจะปลดล็อกอัตโนมัติเมื่อครบ 15 นาที
 11. **CORS / Origin Protection:**
     - CORS ต้องใช้ Exact Origin Allowlist และ `Access-Control-Allow-Credentials: true`; ห้ามใช้ `*` กับ Origin, Method หรือ Header เมื่ออนุญาต Credentials
     - CORS ต้องระบุ Method Allowlist และ Header Allowlist ที่รองรับ `Content-Type` กับ `X-CSRF-Protection` อย่างชัดเจน

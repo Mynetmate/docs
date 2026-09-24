@@ -33,9 +33,10 @@
 
 | Environment Variable | P1 Policy |
 | :--- | :--- |
-| `AUTH_RATE_LIMIT_HMAC_KEY` | Secret สำหรับ HMAC Normalized Login Identifier ต้องเป็นค่าสุ่มอย่างน้อย 32 bytes, ห้ามใช้ร่วมกับ Session Token/Database Secret และห้าม Log ค่า; ถ้าไม่มีค่าหรือสั้นกว่าเกณฑ์ Backend Startup ต้อง Fail Closed ก่อนเปิดรับ Request |
 | `AUTH_TRUST_PROXY_HEADERS` | ค่าเริ่มต้น `false`; เปิดเป็น `true` เฉพาะ Deployment ที่มี Reverse Proxy ซึ่งทีมควบคุม |
 | `AUTH_TRUSTED_PROXY_IPS` | ต้องระบุ Exact Proxy IP Allowlist เมื่อ `AUTH_TRUST_PROXY_HEADERS=true`; ห้ามใช้ `*` และถ้าว่างต้อง Fail Closed โดยไม่เชื่อ Forwarded Header |
-| `AUTH_RATE_LIMIT_MAX_KEYS` | ค่าเริ่มต้น `10000` สำหรับ Bounded In-memory Store |
+| `AUTH_RATE_LIMIT_MAX_KEYS` | ค่าเริ่มต้น `10000` สำหรับ Bounded In-memory Store โดยนับเฉพาะ Canonical Client IP Keys |
 
 P1 Deployment ต้องใช้ FastAPI/Uvicorn เพียงหนึ่ง Process/Worker เมื่อเลือก In-memory Rate Limiter หากจะใช้หลาย Worker หรือหลาย Instance ต้องเปลี่ยนเป็น Shared Rate-limit Store และอัปเดต Architecture Contract ก่อน ห้ามใช้ Per-process Counter หลายชุดเพราะทำให้ Threshold ถูกหลบได้
+
+P1 ไม่เก็บ Identifier Telemetry, HMAC Secret หรือ Identifier Counter ใน Runtime Configuration ส่วน Request field `identifier` ยังคงใช้สำหรับค้นหา Username/Email เท่านั้นและห้ามถูกบันทึกเป็น Raw Value ใน Application/Audit Log

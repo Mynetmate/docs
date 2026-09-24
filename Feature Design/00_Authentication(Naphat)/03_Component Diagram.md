@@ -222,7 +222,7 @@ AUDIT ..> DB : appends audit events
 | Authentication Service       | Login, Logout, Current User, Change Password และ Session Lifecycle | Authentication Use Cases  | Rate Limit, Password Hasher, Repository, Audit Adapter |
 | User Management Service      | Create User, Change Role และ Activate/Deactivate                   | User Management Use Cases | Password Hasher, Repository, Audit Adapter             |
 | Session and Permission Guard | ตรวจ Opaque Session, User Status และ Permission แบบ Default Deny   | Authorization Guard       | Auth Repository, Audit Adapter                         |
-| Login Rate Limiter           | จำกัด Failed Login แบบ In-memory Sliding Window                    | Rate Limit Port           | Client IP Policy, HMAC Key                             |
+| Login Rate Limiter           | จำกัด Failed Login และ In-flight Login ต่อ Canonical Client IP     | Rate Limit Port           | Client IP Policy, Clock และ Capacity Policy            |
 | Password Hasher              | Hash/Verify Argon2id และ Dummy Hash                                | Password Hashing Port     | Argon2id Library/Configuration                         |
 | Auth Repository              | อ่าน/เขียน `users` และ `auth_sessions` ผ่าน SQLAlchemy             | Auth Repository Port      | PostgreSQL                                             |
 | Auth Audit Adapter           | แปลง 4 Business Arguments ของ Auth ไปยัง Contract กลาง             | Auth Audit Port           | Audit Writer Interface                                 |
@@ -242,17 +242,17 @@ sequenceDiagram
     participant L as Audit Log
 
     C->>A: POST /api/auth/login (Identifier, Password)
-    A->>R: Check Client IP sliding window
-    alt 5 Failed Attempts Already Recorded
-        R-->>A: Block before User Query / Argon2id
+    A->>R: Atomically begin attempt for canonical Client IP
+    alt Failures in window + In-flight attempts >= 5
+        R-->>A: Reject without creating reservation
         A-->>C: 429 AUTH_LOGIN_RATE_LIMITED
-    else Attempt Allowed
+    else Reservation Created
         A->>A: Normalize (toLowerCase) Identifier
         A->>DB: Query User by Username or Email
 
         alt User Not Found
             A->>A: Verify submitted password against Dummy Argon2id Hash ignore result
-            A->>R: Record failed IP + HMAC(normalized identifier)
+            A->>R: Finalize once as credential failure for Client IP
             A->>L: Dedicated audit transaction: user.login_failed / auth / null / null
             alt Audit Commit Failed
                 A-->>C: 503 AUTH_SERVICE_UNAVAILABLE
@@ -262,7 +262,7 @@ sequenceDiagram
         else User Found
             A->>A: Verify submitted password against user.password_hash (Argon2id)
             alt Password Incorrect OR User Inactive
-                A->>R: Record failed IP + HMAC(normalized identifier)
+                A->>R: Finalize once as credential failure for Client IP
                 A->>L: Dedicated audit transaction: user.login_failed / user / user_id / null
                 alt Audit Commit Failed
                     A-->>C: 503 AUTH_SERVICE_UNAVAILABLE
@@ -270,6 +270,7 @@ sequenceDiagram
                     A-->>C: 401 AUTH_INVALID_CREDENTIALS
                 end
             else Password Correct AND User Active
+                A->>R: Finalize as credential success and release reservation
                 A->>A: Generate opaque token (CSPRNG 32 bytes) + SHA-256(token)
                 A->>DB: Begin transaction + Insert auth_sessions row
                 A->>L: Write user.login_success in same transaction
@@ -284,7 +285,24 @@ sequenceDiagram
     end
 ```
 
-> Dummy Hash สร้างหนึ่งครั้งตอน Application Startup ด้วย Password Hasher ชุดเดียวกับผู้ใช้จริง (`Argon2id m=19456 KiB, t=2, p=1`) และไม่ผูกกับบัญชีใด Rate Limiter ต้องทำงานก่อน User Query/Argon2id ส่วน Token ดิบมีอยู่เฉพาะใน Memory ชั่วคราวระหว่างสร้าง Response และใน Cookie ของ Browser เท่านั้น ห้ามเก็บลง Database, Response JSON หรือ Log การตรวจและเพิ่ม Rate-limit Counter ต้องเป็น Atomic ภายใน Process เพื่อให้ Concurrent Request หลบ Threshold ไม่ได้
+> Dummy Hash สร้างหนึ่งครั้งตอน Application Startup ด้วย Password Hasher ชุดเดียวกับผู้ใช้จริง (`Argon2id m=19456 KiB, t=2, p=1`) และไม่ผูกกับบัญชีใด Rate Limiter ต้องจองสิทธิ์แบบ Atomic ก่อน User Query/Argon2id ส่วน Token ดิบมีอยู่เฉพาะใน Memory ชั่วคราวระหว่างสร้าง Response และใน Cookie ของ Browser เท่านั้น ห้ามเก็บลง Database, Response JSON หรือ Log
+
+### 2.1 Rate-limit Attempt Lifecycle (D3/D15)
+
+Rate Limiter เก็บเฉพาะ Canonical Client IP และไม่รับ Username, Email หรือ Identifier Digest การจองไม่ถือเป็น Failure จนกว่าจะทราบผลตรวจ Credential และทุก State Transition ต้องเกิดแบบ Atomic บน Event Loop เดียว
+
+| เหตุการณ์ | ผลต่อ Reservation และ Failure Counter |
+| :--- | :--- |
+| ถูก Rate-limit ก่อนเริ่ม | ไม่สร้าง Reservation และไม่เพิ่ม Failure |
+| ไม่พบบัญชี, Password ผิด หรือบัญชี Inactive | เปลี่ยน Reservation เป็น Failure ของ Client IP แบบ Atomic หนึ่งครั้ง โดยใช้เวลาที่ทราบผลล้มเหลว |
+| Credential ถูกต้อง | คืน Reservation โดยไม่ล้าง Failure เก่าที่ยังอยู่ใน Window |
+| Database/System Error ก่อนทราบผลตรวจ | คืน Reservation หลังงานตรวจที่เริ่มแล้วหยุดจริง และไม่เพิ่ม Credential Failure |
+| Credential ถูกต้อง แต่ Session/Audit ขั้นถัดไปล้มเหลว | Reservation ถูกคืนและไม่เพิ่ม Credential Failure |
+| ทราบผลล้มเหลวแล้ว แต่ Audit/System ขั้นถัดไปล้มเหลว | คง Failure ที่บันทึกแล้ว ห้ามเพิ่มซ้ำหรือย้อนคืน |
+| Cancel ก่อนทราบผล | คืน Reservation ต่อเมื่องานตรวจที่เริ่มแล้วหยุดจริง และไม่เพิ่ม Failure |
+| Cancel หลังทราบผลล้มเหลว | คง Failure ที่บันทึกแล้ว; Cleanup ห้ามลบผลนั้น |
+
+Async Context Manager ต้องรับผลตรวจที่ผู้เรียกระบุชัดเจนและทำ Cleanup แบบ Idempotent ห้ามอนุมานว่า Normal Exit คือ Login สำเร็จหรือ Exception คือไม่เกิด Failure หาก Argon2id ถูกส่งไปทำใน Thread การยกเลิก Coroutine ที่รอผลห้ามคืน Reservation จนงานตรวจจริงจบ `asyncio.Lock` ใช้เฉพาะช่วงตรวจ Expiry/Capacity, จอง และ Finalize State เท่านั้น ห้ามถือ Lock ระหว่าง User Query, Argon2id, Audit หรืองาน I/O
 
 ## 3. Request Security, Session & RBAC Sequence Flow
 

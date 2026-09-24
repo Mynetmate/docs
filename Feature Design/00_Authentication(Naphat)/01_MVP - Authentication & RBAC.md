@@ -35,7 +35,7 @@ MyNetMate เลือก Server-side Session แทน JWT สำหรับ P
 
 ### 1.3 Lean P1 Implementation Decisions
 
-- **Rate Limiting:** ใช้ Bounded In-memory Sliding-window TTL Store ใน FastAPI Process เดียว จำกัด Login ล้มเหลว 5 ครั้งต่อ Client IP ใน 15 นาทีและปฏิเสธครั้งที่ 6 ก่อนทำ Argon2id; P1 ไม่เพิ่ม Redis, Database Table, Distributed Limiter, CAPTCHA หรือ Account Lockout
+- **Rate Limiting:** ใช้ Bounded In-memory Sliding-window TTL Store ใน FastAPI Process เดียวและเก็บเฉพาะ Canonical Client IP ตรวจและจองสิทธิ์แบบ Atomic ก่อน User Query/Argon2id โดยต้องมี `Failures ใน Window 15 นาที + In-flight Attempts < 5`; P1 ไม่มี Identifier Telemetry และไม่เพิ่ม Redis, Database Table, Distributed Limiter, CAPTCHA หรือ Account Lockout
 - **Client IP:** ค่าเริ่มต้นใช้ Peer IP จาก Connection หาก Deployment มี Reverse Proxy จึงเปิด Proxy Header Processing โดยกำหนด Trusted Proxy Allowlist แบบชัดเจน ห้ามเชื่อ Forwarded Header จาก Client ทั่วไป
 - **Error Contract:** Auth Error ทุกตัวใช้ `{ "error": { "code", "message" } }`; P1 ไม่ทำระบบ Field-level Error ที่ซับซ้อน และ Frontend ต้องตัดสินพฤติกรรมจาก `code` ไม่ Parse `message`
 - **Frontend Session State:** `AUTH_SESSION_MISSING`/`AUTH_SESSION_INVALID` จาก Protected API ต้องล้าง User State และ User-scoped Query Cache แล้วกลับหน้า Login ส่วน `AUTH_FORBIDDEN`, `AUTH_ORIGIN_REJECTED` และ `AUTH_CSRF_REJECTED` ห้าม Logout ผู้ใช้

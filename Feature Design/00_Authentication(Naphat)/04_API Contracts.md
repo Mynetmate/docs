@@ -42,10 +42,13 @@
 
 ### 2.1 Login
 - **URL:** `POST /api/auth/login`
-- **Rate Limit Enforcement:** ใช้ Sliding Window 15 นาที อนุญาต Login ล้มเหลว 5 ครั้งต่อ **Client IP** และปฏิเสธ Request ครั้งที่ 6 ก่อน User Query/Argon2id ด้วย `429 AUTH_LOGIN_RATE_LIMITED`
-- **P1 Storage:** ใช้ Bounded In-memory TTL Store ค่าเริ่มต้นสูงสุด 10,000 Keys ใน FastAPI Process เดียว การ Restart ทำให้ Counter หายเป็นข้อจำกัดที่ยอมรับใน P1; หากใช้หลาย Worker/Instance ต้องเปลี่ยนเป็น Shared Store และทบทวน Contract ก่อน
-- **Identifier Privacy:** Normalize Username/Email แล้ว HMAC ด้วย Environment Secret `AUTH_RATE_LIMIT_HMAC_KEY` ก่อนเก็บ Counter ชั่วคราว ห้ามเก็บ Raw Identifier; Counter นี้ใช้สำหรับ Security Telemetry/Test เท่านั้นและไม่ทำ Account Lockout ใน P1
+- **Rate Limit Enforcement:** ใช้ Sliding Window 15 นาทีต่อ Canonical Client IP โดยอนุญาตให้เริ่มตรวจ Login เมื่อ `Failed Attempts ที่ยังอยู่ใน Window + In-flight Attempts < 5` เท่านั้น การตรวจ Capacity และจองสิทธิ์ต้อง Atomic ก่อน User Query/Argon2id หากผลรวมเท่ากับหรือมากกว่า 5 ให้ตอบ `429 AUTH_LOGIN_RATE_LIMITED` แม้ In-flight Attempts ยังไม่ทราบผล การจองยังไม่ถือเป็น Failure จนกว่าจะยืนยันผลล้มเหลว
+- **P1 Storage:** ใช้ Bounded In-memory TTL Store ค่าเริ่มต้นสูงสุด 10,000 Canonical Client IP Keys ใน FastAPI Process เดียว แต่ละ IP เก็บ Failure Timestamp ที่ยังมีผลได้สูงสุด 5 รายการและ In-flight Count แบบมีขอบเขต การ Restart ทำให้ Counter หายเป็นข้อจำกัดที่ยอมรับใน P1; หากใช้หลาย Worker/Instance ต้องเปลี่ยนเป็น Shared Store และทบทวน Contract ก่อน
+- **Capacity Failure:** ก่อนปฏิเสธเพราะ Store เต็มต้อง Prune IP Key ที่หมดอายุและไม่มี In-flight Attempt ให้ครบก่อน หากยังเต็มด้วย Active IP Keys ให้ปฏิเสธ IP Key ใหม่ด้วย `503 AUTH_SERVICE_UNAVAILABLE` ไม่ใช้ `429` และห้าม Evict Active Failure State เพื่อรับ Key ใหม่
+- **Identifier Boundary:** Request field `identifier` ยังคงใช้ค้นหา Username/Email แต่ Rate Limiter ห้ามรับหรือเก็บ Raw Identifier, HMAC Digest หรือ Identifier Counter P1 บังคับ Rate Limit ด้วย Canonical Client IP เท่านั้น และยังคงห้ามส่ง Raw Failed-login Identifier เข้า Application Log/Audit Log
+- **Attempt Lifecycle:** Login สำเร็จคืน Reservation โดยไม่ล้าง Failure เก่า; Request ที่ถูก `429` ไม่เพิ่ม Failure และไม่ต่ออายุ Window; ไม่พบบัญชี, Password ผิด หรือบัญชี Inactive เปลี่ยน Reservation เป็น Failure หนึ่งครั้งด้วยเวลาที่ทราบผล หากเกิด Audit/System Error ภายหลังต้องคง Failure นั้นโดยไม่เพิ่มซ้ำหรือย้อนคืน ส่วน Error/Cancel ก่อนทราบผลให้คืน Reservation ต่อเมื่องานตรวจที่เริ่มแล้วหยุดจริงและไม่นับเป็น Credential Failure
 - **Client IP Source:** ค่าเริ่มต้นใช้ Peer IP จาก Connection หากอยู่หลัง Reverse Proxy ให้ใช้ Proxy Header Processing ของ Server เฉพาะเมื่อกำหนด Trusted Proxy IP Allowlist แล้ว ห้ามตั้ง Trust เป็น Wildcard หรือเชื่อ `X-Forwarded-For` จาก Client โดยตรง
+- **Client IP Canonicalization:** ต้อง Parse ด้วยมาตรฐาน IP Address และ Normalize IPv4-mapped IPv6 ให้เป็น IPv4 เดียวกันก่อนใช้เป็น Store Key หาก Client IP หายหรือไม่ถูกต้องให้ Fail Closed ด้วย `503 AUTH_SERVICE_UNAVAILABLE` และห้ามสร้าง Bucket ชื่อ `unknown`
 - **Request Body:**
   ```json
   {
@@ -64,6 +67,7 @@
 - **Response Error:**
   - `401 AUTH_INVALID_CREDENTIALS` — Username/Email หรือ Password ผิด (ไม่ระบุว่าอันไหน)
   - `429 AUTH_LOGIN_RATE_LIMITED` — เกิน Rate Limit
+  - `503 AUTH_SERVICE_UNAVAILABLE` — Client IP ใช้ไม่ได้หรือ Rate-limit Store ไม่มีพื้นที่สำหรับ IP Key ใหม่หลัง Prune แล้ว
 
 ### 2.2 Get Current User (Me)
 - **URL:** `GET /api/auth/me`
@@ -188,12 +192,12 @@ Auth Error ทุกตัวต้องตอบ JSON รูปแบบเด
 | Origin ไม่อยู่ใน Allowlist | `403` | `AUTH_ORIGIN_REJECTED` |
 | ขาดหรือส่ง CSRF Protection Header ผิด | `403` | `AUTH_CSRF_REJECTED` |
 | Current password ผิด (เปลี่ยนรหัส) | `400` | `AUTH_CURRENT_PASSWORD_INVALID` |
-| Rate Limit (Login ครั้งที่ 6+) | `429` | `AUTH_LOGIN_RATE_LIMITED` |
+| Failed Attempts ที่ยังมีผลรวมกับ In-flight Attempts ของ Client IP เท่ากับหรือมากกว่า 5 | `429` | `AUTH_LOGIN_RATE_LIMITED` |
 | สร้างบัญชีแต่ Username/Email ซ้ำ | `409` | `AUTH_USER_ALREADY_EXISTS` |
 | อ้างอิง User ID ที่ไม่มีอยู่จริง | `404` | `AUTH_USER_NOT_FOUND` |
 | Demote/Deactivate Admin คนสุดท้าย | `409` | `AUTH_LAST_ADMIN_PROTECTED` (ต้องใช้ DB Lock เช่น `SELECT ... FOR UPDATE` หรือ Serializable Transaction เพื่อกัน Race Condition) |
 | Request Body/Field ไม่ผ่าน Validation | `422` | `AUTH_REQUEST_INVALID` |
-| Database, Session Store หรือ Mandatory Audit Write ใช้งานไม่ได้ | `503` | `AUTH_SERVICE_UNAVAILABLE` |
+| Database, Session Store, Mandatory Audit Write, Client IP หรือ Rate-limit Capacity ใช้งานไม่ได้ | `503` | `AUTH_SERVICE_UNAVAILABLE` |
 
 ## 4. CORS & CSRF
 - **Origin Definition:** Origin ประกอบด้วย Scheme + Host + Port เช่น `http://localhost:5173`; ค่าที่ Port ต่างกันถือเป็นคนละ Origin
