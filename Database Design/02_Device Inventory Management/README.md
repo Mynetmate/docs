@@ -1,161 +1,115 @@
-# 🗄️ Database Schema: 02_Device Inventory Management (3NF Normalized)
+# Device Inventory Management
 
-> **Path**: `Database Design/02_Device Inventory Management/`  
-> **DBML**: [`device_inventory.dbml`](./device_inventory.dbml)  
-> **Master SQL**: [`device_inventory.sql`](./device_inventory.sql)  
-> **Feature Link**: [`Feature Design/02_Device Inventory Management(Tee)`](../../Feature%20Design/02_Device%20Inventory%20Management(Tee)/)  
->
-> 📁 **Modular SQL Schemas (`sql/`)**:
-> - [`00_enums.sql`](./sql/00_enums.sql) (Enums & Custom Types)
-> - [`01_credentials.sql`](./sql/01_credentials.sql) (ตาราง credential_profiles)
-> - [`02_sites_and_groups.sql`](./sql/02_sites_and_groups.sql) (ตาราง sites, device_groups, device_group_members)
-> - [`03_devices.sql`](./sql/03_devices.sql) (ตาราง devices - Core System of Record)
-> - [`04_device_interfaces.sql`](./sql/04_device_interfaces.sql) (ตาราง device_interfaces - Ports L2/L3)
-> - [`05_device_enrollment_attempts.sql`](./sql/05_device_enrollment_attempts.sql) (ตาราง device_enrollment_attempts - Audit Log)
-> - [`99_seed_data.sql`](./sql/99_seed_data.sql) (ข้อมูล Mock Test Data)
+[`device_inventory.dbml`](./device_inventory.dbml) คือ diagram ของ Device Inventory database design
 
----
+## Tables
 
-## 1. Entity-Relationship Diagram (ERD - 3NF)
+- `credential_profiles` — credentials ที่เข้ารหัสและพอร์ต SSH/SNMP
+- `sites` และ `device_groups` — การจัดกลุ่มอุปกรณ์
+- `devices` — device inventory; `management_ip` เป็น address ที่ยืนยันว่า collect ได้ ส่วน `advertised_management_ip` เป็นข้อมูลที่เพื่อนบ้านประกาศผ่าน LLDP
+- `device_interfaces` และ `interface_ip_addresses` — interface และ IP addresses ของ interface
+- `device_group_members` — many-to-many membership
+- `config_versions` — configuration version history
 
-```mermaid
-erDiagram
-    USERS ||--o{ CREDENTIAL_PROFILES : "creates"
-    USERS ||--o{ DEVICES : "enrolled_by"
-    USERS ||--o{ DEVICE_ENROLLMENT_ATTEMPTS : "initiated_by"
-    
-    SITES ||--o{ DEVICES : "located_at"
-    CREDENTIAL_PROFILES ||--o{ DEVICES : "authenticates"
-    CREDENTIAL_PROFILES ||--o{ DEVICE_ENROLLMENT_ATTEMPTS : "tested_with"
-    
-    DEVICES ||--|{ DEVICE_INTERFACES : "has_ports"
-    DEVICES ||--o{ DEVICE_GROUP_MEMBERS : "belongs_to"
-    DEVICE_GROUPS ||--o{ DEVICE_GROUP_MEMBERS : "contains"
+`management_state = unmanaged` รองรับ neighbor ที่พบจาก LLDP แต่ยังไม่มี management address ที่ตรวจสอบได้
 
-    CREDENTIAL_PROFILES {
-        uuid id PK
-        varchar name UK "Cisco Core Profile"
-        enum credential_type "ssh_password, snmp_v2c, etc."
-        varchar username
-        text password_encrypted "AES-256-GCM / KMS"
-        text enable_secret_encrypted "Privileged EXEC secret"
-        text snmp_community_ro_encrypted "Read-Only Community"
-        text snmp_community_rw_encrypted "Read-Write Community"
-        int ssh_port "Default 22"
-        int snmp_port "Default 161"
-        text description
-        uuid created_by FK
-        timestamptz created_at
-        timestamptz updated_at
-    }
+ไฟล์นี้ใช้เพื่อแสดงโครงสร้างเท่านั้น; constraints เช่น `CHECK` และ partial indexes ให้ดูจาก backend schema/migrations ซึ่งเป็นพฤติกรรมที่ใช้รันจริง
 
-    SITES {
-        uuid id PK
-        varchar name UK "HQ Bangkok, Bangna Branch"
-        varchar location_detail "Floor 3, Server Room"
-        text description
-        timestamptz created_at
-        timestamptz updated_at
-    }
+## Data Dictionary
 
-    DEVICE_GROUPS {
-        uuid id PK
-        varchar name UK "Core Routers, Access Switches"
-        varchar color_tag "Hex #3B82F6"
-        text description
-        timestamptz created_at
-        timestamptz updated_at
-    }
+### `credential_profiles`
 
-    DEVICE_GROUP_MEMBERS {
-        uuid device_id PK,FK
-        uuid group_id PK,FK
-        timestamptz added_at
-    }
+| Field | Description |
+| --- | --- |
+| `id` | Primary key ของ credential profile |
+| `name` | ชื่อ profile ที่ไม่ซ้ำกัน |
+| `username` | Username สำหรับ login; ต้องมีคู่กับ `password_encrypted` |
+| `password_encrypted` | Password ที่เข้ารหัสแล้ว |
+| `enable_secret_encrypted` | Privileged/enable secret ที่เข้ารหัสแล้ว |
+| `snmp_community_ro_encrypted` | SNMP read-only community ที่เข้ารหัสแล้ว |
+| `ssh_port` | TCP port ของ SSH; ค่าเริ่มต้น 22 |
+| `snmp_port` | UDP port ของ SNMP; ค่าเริ่มต้น 161 |
+| `description` | คำอธิบายสำหรับผู้ดูแล |
+| `created_by` | ID ของผู้ที่สร้าง profile |
+| `created_at` / `updated_at` | เวลาสร้าง / เวลาแก้ไขล่าสุด |
 
-    DEVICES {
-        uuid id PK
-        inet management_ip UK "Management IP (Candidate Key)"
-        varchar hostname "RT-CORE-01"
-        varchar domain_name "lab.local"
-        text description "SNMP sysDescr"
-        enum device_type "router, switch, firewall, etc."
-        enum role "core, distribution, access, edge_router"
-        enum vendor "cisco, mikrotik, huawei, juniper, arista, unknown"
-        varchar model "Catalyst 2960, RB750Gr3"
-        varchar os_version "IOS 15.2, RouterOS 7.14"
-        varchar serial_number "FCW2345L0P8"
-        macaddr chassis_mac "Base MAC Address"
-        varchar chassis_id "LLDP Subtype ID"
-        uuid site_id FK
-        uuid credential_profile_id FK
-        varchar platform "Netmiko driver e.g. cisco_ios"
-        int management_vlan "99"
-        inet default_gateway "192.168.1.254"
-        boolean is_managed "true"
-        enum status "online, offline, unreachable, maintenance"
-        enum enrollment_status "pending, enrolled, failed, rejected"
-        enum discovery_method "manual_enrollment, auto_discovery, csv_import"
-        timestamptz last_discovered_at
-        timestamptz last_seen_at
-        timestamptz last_collected_at
-        bigint uptime_seconds
-        text notes
-        uuid created_by FK
-        timestamptz created_at
-        timestamptz updated_at
-    }
+### `sites` และ `device_groups`
 
-    DEVICE_INTERFACES {
-        uuid id PK
-        uuid device_id FK "Composite AK: (device_id, if_index)"
-        int if_index "SNMP ifIndex"
-        varchar name "GigabitEthernet0/1, ether1"
-        macaddr mac_address "Port MAC"
-        inet ip_address "L3 IP"
-        inet subnet_mask "255.255.255.0"
-        varchar description "Uplink to Core"
-        enum mode "access, trunk, routed, loopback, svi, unknown"
-        int vlan_id "1-4094"
-        enum admin_status "Up, Down, Testing, Unknown"
-        enum oper_status "Up, Down, Testing, Unknown"
-        bigint speed_bps "1000000000"
-        timestamptz updated_at
-    }
+| Table.Field | Description |
+| --- | --- |
+| `sites.id` | Primary key ของ site |
+| `sites.name` | ชื่อ site ที่ไม่ซ้ำกัน |
+| `sites.location_detail` | รายละเอียดตำแหน่ง เช่น อาคารหรือห้อง |
+| `sites.description` | คำอธิบาย site |
+| `sites.created_at` / `updated_at` | เวลาสร้าง / เวลาแก้ไขล่าสุด |
+| `device_groups.id` | Primary key ของ device group |
+| `device_groups.name` | ชื่อ group ที่ไม่ซ้ำกัน |
+| `device_groups.color_tag` | สี hex สำหรับแสดงผลใน UI |
+| `device_groups.description` | คำอธิบาย group |
+| `device_groups.created_at` / `updated_at` | เวลาสร้าง / เวลาแก้ไขล่าสุด |
 
-    DEVICE_ENROLLMENT_ATTEMPTS {
-        uuid id PK
-        inet target_ip
-        uuid credential_profile_id FK
-        enum status "pending, authenticating, collecting, succeeded, failed"
-        text error_message
-        varchar collected_hostname
-        varchar collected_vendor
-        varchar collected_model
-        varchar collected_os_version
-        int duration_ms
-        uuid initiated_by FK
-        timestamptz attempted_at
-    }
-```
+### `devices`
 
----
+| Field | Description |
+| --- | --- |
+| `id` | Primary key ของ device |
+| `management_ip` | IP ที่ยืนยันแล้วว่าใช้ collect device ได้; ว่างได้สำหรับ unmanaged neighbor |
+| `advertised_management_ip` | IP ที่เพื่อนบ้านประกาศผ่าน LLDP; ยังไม่ถือว่ายืนยันว่า collect ได้ |
+| `hostname` | Hostname ล่าสุดที่ collect ได้ |
+| `device_type` | ประเภทอุปกรณ์ เช่น router, switch หรือ firewall |
+| `role` | บทบาทในเครือข่าย เช่น core, distribution หรือ access |
+| `vendor`, `model`, `os_version`, `serial_number` | ข้อมูล hardware และระบบปฏิบัติการของอุปกรณ์ |
+| `chassis_id_subtype` | ประเภทของ LLDP chassis identifier |
+| `chassis_id` | LLDP chassis identifier ที่ใช้ระบุตัวตนอุปกรณ์อย่างคงที่ |
+| `site_id` | อ้างอิง site ที่อุปกรณ์ตั้งอยู่ |
+| `credential_profile_id` | อ้างอิง credential profile สำหรับ collect |
+| `platform` | ชื่อ platform/driver ที่ collector ใช้งาน |
+| `management_state` | Lifecycle: `active`, `unmanaged`, `maintenance` หรือ `retired` |
+| `reachability` | ผลการตรวจล่าสุด: `unknown`, `reachable` หรือ `unreachable` |
+| `enrollment_source` | แหล่งที่สร้าง record: manual, discovery หรือ CSV import |
+| `last_seen_at` | เวลาที่อุปกรณ์ถูกยืนยันว่า reachable ล่าสุด |
+| `reachability_checked_at` | เวลาที่ตรวจ reachability ล่าสุด |
+| `last_collected_at` | เวลาที่ collect inventory facts ล่าสุด |
+| `notes` | หมายเหตุของผู้ดูแล |
+| `created_by` | ID ของผู้สร้าง record |
+| `created_at` / `updated_at` | เวลาสร้าง / เวลาแก้ไขล่าสุด |
 
-## 2. การวิเคราะห์ความถูกต้องตามมาตรฐาน 3NF (Normalization Analysis)
+### `device_group_members`
 
-| Table | 1NF (Atomic Data) | 2NF (No Partial Dependency) | 3NF (No Transitive Dependency) | Functional Dependencies ($X \to Y$) |
-| :--- | :--- | :--- | :--- | :--- |
-| **`credential_profiles`** | ผ่าน: ทุก Attribute เป็นค่าเดี่ยว | ผ่าน: PK คือ `id`, AK คือ `name` (Single-column keys) | ผ่าน: Non-prime attributes ทุกตัวขึ้นตรงกับ `id` โดยตรง | `id` $\to$ `name, credential_type, username, password_encrypted, ...`<br>`name` $\to$ `id, ...` |
-| **`sites`** | ผ่าน: Atomic strings | ผ่าน: PK คือ `id`, AK คือ `name` | ผ่าน: ทุก Attribute ขึ้นกับ `id` โดยตรง | `id` $\to$ `name, location_detail, description...` |
-| **`device_groups`** | ผ่าน: Atomic strings | ผ่าน: PK คือ `id`, AK คือ `name` | ผ่าน: ทุก Attribute ขึ้นกับ `id` โดยตรง | `id` $\to$ `name, color_tag, description...` |
-| **`device_group_members`** | ผ่าน: Atomic UUIDs | ผ่าน: PK เป็น Composite `(device_id, group_id)` และ `added_at` ขึ้นตรงกับทั้งสองค่าพร้อมกัน | ผ่าน: ไม่มี Non-key attribute อื่น | `(device_id, group_id)` $\to$ `added_at` |
-| **`devices`** | ผ่าน: แตก Group เป็น Many-to-Many แยก | ผ่าน: PK คือ `id`, Candidate Key คือ `management_ip` (Single-column) | ผ่าน: ข้อมูล Site และ Credential ถูกอ้างผ่าน FK (`site_id`, `credential_profile_id`) ไม่เก็บ redundant attributes ซ้ำซ้อน | `id` $\to$ `management_ip, hostname, vendor, model, os_version, site_id, ...`<br>`management_ip` $\to$ `id, ...` |
-| **`device_interfaces`** | ผ่าน: ข้อมูลพอร์ตเป็นค่าเดี่ยว | ผ่าน: Composite Candidate Key คือ `(device_id, if_index)` | ผ่าน: `name`, `mac_address`, `admin_status`, `mode` ขึ้นตรงกับ `(device_id, if_index)` เท่านั้น | `id` $\to$ `device_id, if_index, name, mac_address, mode, ...`<br>`(device_id, if_index)` $\to$ `id, ...` |
-| **`device_enrollment_attempts`** | ผ่าน: ข้อมูล Log ของแต่ละการลองเชื่อมต่อ | ผ่าน: PK คือ `id` | ผ่าน: บันทึกข้อมูลเฉพาะของ Event แต่ละรอบ | `id` $\to$ `target_ip, status, error_message, duration_ms, ...` |
+| Field | Description |
+| --- | --- |
+| `device_id` | อ้างอิง device ที่เป็นสมาชิก |
+| `group_id` | อ้างอิง device group |
+| `added_at` | เวลาที่เพิ่มสมาชิกเข้ากลุ่ม |
 
----
+### `device_interfaces` และ `interface_ip_addresses`
 
-## 3. การแบ่งขอบเขตและเชื่อมโยงกับ `04_Network Discovery`
+| Table.Field | Description |
+| --- | --- |
+| `device_interfaces.id` | Primary key ของ interface |
+| `device_interfaces.device_id` | อ้างอิง device เจ้าของ interface |
+| `device_interfaces.if_index` | SNMP ifIndex; อาจไม่มีในบางแหล่งข้อมูล |
+| `device_interfaces.name` | ชื่อ interface |
+| `device_interfaces.mac_address` | MAC address ของ interface |
+| `device_interfaces.description` | Interface description ที่อุปกรณ์รายงาน |
+| `device_interfaces.mode` | Mode: access, trunk, routed, loopback, svi หรือ unknown |
+| `device_interfaces.access_vlan_id` | Access VLAN; ใช้ได้เฉพาะ interface mode access |
+| `device_interfaces.admin_status` | สถานะที่ configure ไว้ |
+| `device_interfaces.oper_status` | สถานะการทำงานที่ตรวจพบ |
+| `device_interfaces.speed_bps` | ความเร็ว interface หน่วย bit/s |
+| `device_interfaces.collected_at` | เวลาที่ข้อมูล interface ถูก collect |
+| `device_interfaces.retired_at` | เวลาที่ interface เก่าเลิกเป็น current record |
+| `device_interfaces.updated_at` | เวลาแก้ไขล่าสุด |
+| `interface_ip_addresses.interface_id` | อ้างอิง interface |
+| `interface_ip_addresses.address` | IP address ที่ผูกกับ interface |
 
-- **`04_Network Discovery`**: รับผิดชอบการสแกนอัตโนมัติ (Discovery Engine / Oxian) เพื่อค้นหา Topology Graph, Links ระหว่างพอร์ต, และตรวจพบเพื่อนบ้าน (Neighbor Discovery)
-- **`02_Device Inventory Management`**: เป็น **Master Inventory Core** สำหรับการลงทะเบียนอุปกรณ์ด้วยมือ (Manual Enrollment), บริหารจัดการ Credential Profiles (Encrypted), จัดกลุ่มตาม Site และ Device Group, ตลอดจนเก็บ Audit Log ความพยายามนำเข้าอุปกรณ์
+### `config_versions`
+
+| Field | Description |
+| --- | --- |
+| `id` | Primary key ของ configuration version |
+| `device_id` | อ้างอิง device เจ้าของ configuration |
+| `version` | เลขลำดับ version |
+| `content` | เนื้อหา configuration ที่บันทึก |
+| `message` | ข้อความสรุป version |
+| `created_at` | เวลาที่บันทึก version |
