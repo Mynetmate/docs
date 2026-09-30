@@ -1,42 +1,18 @@
-# 🗄️ MyNetMate Database Design
+# MyNetMate Database Design
 
-โฟลเดอร์นี้เก็บ **Database Schemas (SQL DDL / DBML / ERD Documentation)** ของระบบ MyNetMate ทั้งหมด โดยแบ่งตามแต่ละ Feature Module:
+โฟลเดอร์นี้เก็บ Database Markup Language (DBML) สำหรับดูโครงสร้างฐานข้อมูลผ่าน dbdiagram หรือ DBML-compatible viewer เท่านั้น ไม่มี SQL DDL หรือ seed data อยู่ในชุดเอกสารนี้
 
-## 📁 โครงสร้างโฟลเดอร์ตาม Feature
+Schema ที่ใช้งานจริงอยู่ใน backend migrations และ SQLAlchemy table definitions. เมื่อ schema เปลี่ยน ต้องปรับ DBML ที่เกี่ยวข้องในโฟลเดอร์นี้ให้ตรงกันใน change เดียวกัน
 
-```text
-Database Design/
-├── 00_Authentication/
-├── 01_Dashboard&Monitoring/
-├── 02_Device Inventory Management/
-│   ├── README.md
-│   ├── device_inventory.dbml
-│   ├── device_inventory.sql
-│   └── sql/
-│       ├── 00_enums.sql
-│       ├── 01_credentials.sql
-│       ├── 02_sites_and_groups.sql
-│       ├── 03_devices.sql
-│       ├── 04_device_interfaces.sql
-│       ├── 05_device_enrollment_attempts.sql
-│       └── 99_seed_data.sql
-├── 03_Network Topology Visualization/
-├── 04_Network Discovery/
-│   ├── README.md
-│   ├── network_discovery.dbml
-│   └── sql/
-│       ├── 00_enums.sql
-│       ├── 01_devices.sql
-│       ├── 02_device_interfaces.sql
-│       ├── 03_topology_links.sql
-│       ├── 04_discovery_scans.sql
-│       └── 99_seed_data.sql
-├── 05_Configuration Management/
-├── 07_AI Component/
-├── 09_Security & Validation/
-├── 10_Configuration Deployment/
-└── 11_Audit Trail/
-```
+คำอธิบายราย field อยู่ใน README ของ feature ที่เป็นเจ้าของตาราง เพื่อไม่ให้คำอธิบายของตาราง shared ซ้ำกันหลายจุด
 
-## 🔗 ความสัมพันธ์กับ Feature Design
-โครงสร้างโฟลเดอร์ของ Database Design จะสอดคล้องกับ [Feature Design/](../Feature%20Design/) ของโปรเจกต์โดยตรง
+## Diagrams
+
+- [02 Device Inventory Management](./02_Device%20Inventory%20Management/device_inventory.dbml) — inventory, credentials, sites, groups, interfaces และ config versions
+- [04 Network Discovery](./04_Network%20Discovery/network_discovery.dbml) — scan history, collection runs, LLDP observations และ default-route topology evidence
+
+## Ownership
+
+`02_Device Inventory Management` เป็นเจ้าของ persistent inventory: `devices`, `credential_profiles`, `device_interfaces` และตารางที่เกี่ยวข้อง
+
+`04_Network Discovery` เป็นเจ้าของข้อมูล discovery history. Diagram นี้ขยายตาราง inventory ที่ discovery อ้างอิงเพื่อให้เห็นความสัมพันธ์ครบเมื่อเปิดไฟล์เดียว
