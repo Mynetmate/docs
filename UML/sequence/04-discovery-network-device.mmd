@@ -1,0 +1,66 @@
+sequenceDiagram
+    actor User as Operator / Admin
+    participant Frontend
+    participant Backend
+    participant Collection as Collection Service
+    participant Engine as Network Discovery Library
+    participant Devices as Network Devices
+    participant DB as PostgreSQL
+
+    User->>Frontend: ระบุ Scan IP และ Credential Profile
+    activate Frontend
+    Frontend->>Backend: ส่งคำขอค้นหาอุปกรณ์เครือข่าย
+    activate Backend
+    Backend->>Collection: ตรวจสอบ Credential และเริ่มสแกน
+    activate Collection
+    Collection->>DB: อ่าน Credential และสร้าง Discovery Scan
+    activate DB
+    DB--)Collection: ข้อมูล Credential และ Scan ID
+    deactivate DB
+
+    Collection->>Engine: ค้นหาอุปกรณ์และความเชื่อมโยง
+    activate Engine
+    Engine->>Devices: สำรวจเครือข่าย
+    activate Devices
+    Devices--)Engine: ข้อมูลอุปกรณ์และความเชื่อมโยง
+    deactivate Devices
+    Engine--)Collection: ผล Discovery ครบชุด
+    deactivate Engine
+
+    loop แต่ละ IP ในคิวภายในข้อจำกัดจำนวนและความลึก
+        Collection->>DB: สร้าง Collection Run
+        activate DB
+        DB--)Collection: Collection Run
+        deactivate DB
+        Collection->>Devices: เก็บข้อมูลอุปกรณ์ผ่าน SNMP
+        activate Devices
+        Devices--)Collection: ข้อมูลอุปกรณ์หรือข้อผิดพลาด
+        deactivate Devices
+        alt เก็บข้อมูลสำเร็จ
+            Collection->>DB: สร้างหรืออัปเดต Device, Interface และ LLDP Observation
+            activate DB
+            DB--)Collection: บันทึกผล Collection
+            deactivate DB
+            Collection->>Collection: เพิ่ม IP ของ Neighbor ที่ยังไม่เคยตรวจลงคิว
+        else เก็บข้อมูลไม่สำเร็จ
+            Collection->>DB: บันทึก Collection ที่ล้มเหลว
+            activate DB
+            DB--)Collection: บันทึกประวัติสำเร็จ
+            deactivate DB
+        end
+    end
+    Collection->>DB: บันทึกสถานะ Scan ตามผล Collection
+    activate DB
+    DB--)Collection: ผล Scan
+    deactivate DB
+    Collection->>DB: บันทึก Unmanaged Neighbor และ Default Route
+    activate DB
+    DB--)Collection: บันทึกสำเร็จ
+    deactivate DB
+    Collection--)Backend: ผล Scan พร้อม Device และ Link จาก Discovery
+    deactivate Collection
+    Backend--)Frontend: ส่งผลการค้นหาพร้อม Device และ Link
+    deactivate Backend
+    Frontend->>Frontend: จัดตำแหน่งและวาด Topology จากผลการค้นหา
+    Frontend--)User: แสดงผลการสแกน
+    deactivate Frontend

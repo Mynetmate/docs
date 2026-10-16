@@ -1,0 +1,24 @@
+sequenceDiagram
+    actor User as Viewer / Operator / Admin
+    participant Web as Frontend
+    participant Backend
+    participant Service as Device Inventory Service
+    participant DB as PostgreSQL
+
+    Note over User,Web: ทั้ง 3 บทบาทสามารถดูรายการอุปกรณ์ได้
+    User->>Web: เปิดหน้า Device Inventory
+    activate Web
+    Web->>Backend: ส่งคำขอรายการอุปกรณ์
+    activate Backend
+    Backend->>Service: ค้นหารายการอุปกรณ์ตามเงื่อนไข
+    activate Service
+    Service->>DB: Query Device Inventory
+    activate DB
+    DB--)Service: Device list
+    deactivate DB
+    Service--)Backend: Device list
+    deactivate Service
+    Backend--)Web: ส่งรายการอุปกรณ์
+    deactivate Backend
+    Web--)User: แสดงรายการอุปกรณ์
+    deactivate Web

@@ -1,0 +1,85 @@
+sequenceDiagram
+    actor User as Operator / Admin
+    participant Frontend
+    participant Backend
+    participant Service as Device Service
+    participant Collection as Collection Service
+    participant Device as Network Device
+    participant DB as PostgreSQL
+
+    User->>Frontend: กรอกและบันทึกข้อมูลอุปกรณ์
+    activate Frontend
+    Frontend->>Backend: ส่งคำขอเพิ่มหรือแก้ไขอุปกรณ์
+    activate Backend
+    Backend->>Service: ดำเนินการตามคำขอ
+    activate Service
+
+    alt เพิ่มอุปกรณ์
+        Service->>DB: ค้นหาอุปกรณ์ด้วย Management IP
+        activate DB
+        DB--)Service: ผลการค้นหา
+        deactivate DB
+        alt พบ IP ซ้ำ
+            Service--)Backend: แจ้งว่าอุปกรณ์มีอยู่แล้ว
+        else ไม่พบ IP ซ้ำ
+            Service->>DB: ตรวจสอบ Site, Credential Profile และ Group
+            activate DB
+            DB--)Service: ผลตรวจสอบข้อมูลอ้างอิง
+            deactivate DB
+            alt ข้อมูลอ้างอิงไม่ถูกต้อง
+                Service--)Backend: แจ้งข้อผิดพลาดข้อมูลอ้างอิง
+            else ข้อมูลอ้างอิงถูกต้อง
+                Service->>Collection: เก็บ snapshot สำหรับเพิ่มอุปกรณ์
+                activate Collection
+                Collection->>DB: อ่าน Credential และสร้าง Collection Run
+                activate DB
+                DB--)Collection: Credential และ Collection Run
+                deactivate DB
+                Collection->>Device: เก็บข้อมูลผ่าน SNMP
+                activate Device
+                Device--)Collection: ข้อมูลอุปกรณ์หรือข้อผิดพลาด
+                deactivate Device
+                alt เก็บข้อมูลและตรวจสอบ identity สำเร็จ
+                    Collection->>DB: บันทึก Device, Interface, Neighbor และผล Collection
+                    activate DB
+                    DB--)Collection: บันทึกสำเร็จและ Device ID
+                    deactivate DB
+                else เก็บข้อมูลหรือตรวจสอบ identity ไม่สำเร็จ
+                    Collection->>DB: ยกเลิก snapshot ที่ผิดพลาดและบันทึกประวัติ Collection
+                    activate DB
+                    DB--)Collection: บันทึกผลล้มเหลว
+                    deactivate DB
+                end
+                Collection--)Service: ผลการเพิ่มอุปกรณ์
+                deactivate Collection
+                Service--)Backend: รายละเอียดอุปกรณ์หรือข้อผิดพลาด
+            end
+        end
+    else แก้ไขอุปกรณ์
+        Service->>DB: ค้นหาอุปกรณ์ด้วยรหัสอุปกรณ์
+        activate DB
+        DB--)Service: ผลการค้นหา
+        deactivate DB
+        alt ไม่พบอุปกรณ์
+            Service--)Backend: แจ้งว่าไม่พบอุปกรณ์
+        else พบอุปกรณ์
+            Service->>DB: ตรวจสอบ Site, Credential Profile และ Group
+            activate DB
+            DB--)Service: ผลตรวจสอบข้อมูลอ้างอิง
+            deactivate DB
+            alt ข้อมูลอ้างอิงไม่ถูกต้อง
+                Service--)Backend: แจ้งข้อผิดพลาดข้อมูลอ้างอิง
+            else ข้อมูลอ้างอิงถูกต้อง
+                Service->>DB: อัปเดตข้อมูลอุปกรณ์และ Group แล้วบันทึก
+                activate DB
+                DB--)Service: ข้อมูลอุปกรณ์ล่าสุด
+                deactivate DB
+                Service--)Backend: ส่งข้อมูลอุปกรณ์ล่าสุด
+            end
+        end
+    end
+    deactivate Service
+    Backend--)Frontend: ส่งผลการทำงาน
+    deactivate Backend
+    Frontend--)User: แสดงผลสำเร็จหรือข้อผิดพลาด
+    deactivate Frontend

@@ -1,0 +1,40 @@
+sequenceDiagram
+    actor User as Operator / Admin
+    participant Frontend
+    participant Backend
+    participant Device as Network Device
+    participant DB as PostgreSQL
+
+    User->>Frontend: กดปุ่ม Check Status
+    activate Frontend
+    Frontend->>Backend: ส่งคำขอตรวจสอบสถานะอุปกรณ์
+    activate Backend
+    Backend->>DB: อ่านข้อมูลอุปกรณ์และ Credential
+    activate DB
+    DB--)Backend: ข้อมูลอุปกรณ์และ Credential
+    deactivate DB
+
+    loop แต่ละอุปกรณ์ที่ต้องตรวจสอบ
+        opt Credential ใช้งานได้
+            Backend->>Device: ตรวจสอบการเชื่อมต่อผ่าน SNMP
+            activate Device
+            Device--)Backend: ผลการตรวจสอบ
+            deactivate Device
+        end
+        alt ติดต่อได้
+            Backend->>Backend: กำหนดสถานะ reachable
+        else ติดต่อไม่ได้
+            Backend->>Backend: กำหนดสถานะ unreachable
+        else ตรวจสอบไม่ได้
+            Backend->>Backend: กำหนดสถานะ unknown
+        end
+    end
+
+    Backend->>DB: บันทึกสถานะอุปกรณ์และเวลาตรวจสอบ
+    activate DB
+    DB--)Backend: บันทึกสำเร็จ
+    deactivate DB
+    Backend--)Frontend: ส่งผลการตรวจสอบสถานะ
+    deactivate Backend
+    Frontend--)User: แสดงสถานะอุปกรณ์ล่าสุด
+    deactivate Frontend
